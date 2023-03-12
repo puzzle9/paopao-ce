@@ -28,7 +28,7 @@ import (
 	"github.com/rocboss/paopao-ce/pkg/app"
 	"github.com/rocboss/paopao-ce/pkg/convert"
 	"github.com/rocboss/paopao-ce/pkg/debug"
-	"github.com/rocboss/paopao-ce/pkg/util"
+	"github.com/rocboss/paopao-ce/pkg/utils"
 	"github.com/rocboss/paopao-ce/pkg/xerror"
 	"github.com/sirupsen/logrus"
 )
@@ -204,6 +204,7 @@ func (s *pubSrv) SendCaptcha(req *web.SendCaptchaReq) mir.Error {
 
 	// 验证图片验证码
 	if res, err := s.Redis.Get(ctx, "PaoPaoCaptcha:"+req.ImgCaptchaID).Result(); err != nil || res != req.ImgCaptcha {
+		logrus.Debugf("get captcha err:%s expect:%s got:%s", err, res, req.ImgCaptcha)
 		return _errErrorCaptchaPassword
 	}
 	s.Redis.Del(ctx, "PaoPaoCaptcha:"+req.ImgCaptchaID).Result()
@@ -241,9 +242,9 @@ func (s *pubSrv) GetCaptcha() (*web.GetCaptchaResp, mir.Error) {
 		logrus.Errorf("png.Encode err:%s", err)
 		return nil, xerror.ServerError
 	}
-	key := util.EncodeMD5(uuid.Must(uuid.NewV4()).String())
+	key := utils.EncodeMD5(uuid.Must(uuid.NewV4()).String())
 	// 五分钟有效期
-	s.Redis.SetEX(context.Background(), "PaoPaoCaptcha:"+key, password, time.Minute*5)
+	s.Redis.SetEx(context.Background(), "PaoPaoCaptcha:"+key, password, time.Minute*5)
 	return &web.GetCaptchaResp{
 		Id:      key,
 		Content: "data:image/png;base64," + base64.StdEncoding.EncodeToString(emptyBuff.Bytes()),

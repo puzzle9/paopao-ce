@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pyroscope-io/client/pyroscope"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"gorm.io/gorm/logger"
@@ -20,6 +21,13 @@ var files embed.FS
 
 type Setting struct {
 	vp *viper.Viper
+}
+
+type PyroscopeSettingS struct {
+	AppName   string
+	Endpoint  string
+	AuthToken string
+	Logger    string
 }
 
 type LoggerSettingS struct {
@@ -83,9 +91,10 @@ type SimpleCacheIndexSettingS struct {
 }
 
 type BigCacheIndexSettingS struct {
-	MaxIndexPage   int
-	ExpireInSecond time.Duration
-	Verbose        bool
+	MaxIndexPage     int
+	HardMaxCacheSize int
+	ExpireInSecond   time.Duration
+	Verbose          bool
 }
 
 type AlipaySettingS struct {
@@ -292,8 +301,18 @@ func (s *MySQLSettingS) Dsn() string {
 func (s PostgresSettingS) Dsn() string {
 	var params []string
 	for k, v := range s {
-		if len(v) > 0 {
-			params = append(params, strings.ToLower(k)+"="+v)
+		if len(v) == 0 {
+			continue
+		}
+		lk := strings.ToLower(k)
+		tv := strings.Trim(v, " ")
+		switch lk {
+		case "schema":
+			params = append(params, "search_path="+tv)
+		case "applicationname":
+			params = append(params, "application_name="+tv)
+		default:
+			params = append(params, lk+"="+tv)
 		}
 	}
 	return strings.Join(params, " ")
@@ -379,6 +398,16 @@ func (s *ZincSettingS) Endpoint() string {
 
 func (s *MeiliSettingS) Endpoint() string {
 	return endpoint(s.Host, s.Secure)
+}
+
+func (s *PyroscopeSettingS) GetLogger() (logger pyroscope.Logger) {
+	switch strings.ToLower(s.Logger) {
+	case "standard":
+		logger = pyroscope.StandardLogger
+	case "logrus":
+		logger = logrus.StandardLogger()
+	}
+	return
 }
 
 func endpoint(host string, secure bool) string {
