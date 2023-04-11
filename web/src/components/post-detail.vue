@@ -127,14 +127,14 @@
                 />
             </template>
             <div v-if="post.texts.length > 0">
-                <span
+                <div
                     v-for="content in post.texts"
                     :key="content.id"
                     class="post-text"
                     @click.stop="doClickText($event, post.id)"
-                    v-html="parsePostTag(content.content).content"
                 >
-                </span>
+                    <Viewer :value="parsePostTag(content.content).content" :plugins="plugins"></Viewer>
+                </div>
             </div>
 
             <template #footer>
@@ -200,6 +200,8 @@ import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
 import { formatPrettyTime } from '@/utils/formatTime';
 import { parsePostTag } from '@/utils/content';
+import { Viewer } from '@bytemd/vue-next'
+import gfm from '@bytemd/plugin-gfm'
 import {
     Heart,
     HeartOutline,
@@ -221,6 +223,7 @@ import {
 import type { DropdownOption } from 'naive-ui';
 import { VisibilityEnum } from '@/utils/IEnum';
 
+const plugins = [gfm()]
 const store = useStore();
 const router = useRouter();
 const hasStarred = ref(false);

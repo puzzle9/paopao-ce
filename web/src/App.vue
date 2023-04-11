@@ -52,3 +52,7 @@ const theme = computed(() => (store.state.theme === 'dark' ? darkTheme : null));
 <style lang="less">
 @import '@/assets/css/main.less';
 </style>
+
+<style lang="scss">
+@import '@/assets/css/vuepress.scss';
+</style>

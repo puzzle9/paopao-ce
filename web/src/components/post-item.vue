@@ -53,14 +53,16 @@
                 </span>
             </template>
             <template #description v-if="post.texts.length > 0">
-                <span
+                <div
                     v-for="content in post.texts"
                     :key="content.id"
                     class="post-text"
-                    @click.stop="doClickText($event, post.id)"
-                    v-html="parsePostTag(content.content).content"
                 >
-                </span>
+                    <Viewer @click.stop="doClickText($event, post.id)" 
+                            :value="parsePostTag(content.content).content" 
+                            :plugins="plugins">
+                    </Viewer>
+                </div>
             </template>
 
             <template #footer>
@@ -114,12 +116,15 @@ import { useStore } from 'vuex';
 import { useRoute, useRouter } from 'vue-router';
 import { formatRelativeTime } from '@/utils/formatTime';
 import { parsePostTag } from '@/utils/content';
+import { Viewer } from '@bytemd/vue-next'
+import gfm from '@bytemd/plugin-gfm'
 import {
     HeartOutline,
     BookmarkOutline,
     ChatboxOutline,
 } from '@vicons/ionicons5';
 
+const plugins = [gfm()]
 const route = useRoute();
 const router = useRouter();
 const store = useStore();

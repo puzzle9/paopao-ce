@@ -60,14 +60,14 @@
                 </div>
             </template>
             <template #description v-if="comment.texts.length > 0">
-                <span
+                <div
                     v-for="content in comment.texts"
                     :key="content.id"
                     class="comment-text"
                     @click.stop="doClickText($event, comment.id)"
-                    v-html="parsePostTag(content.content).content"
                 >
-                </span>
+                    <Viewer :value="parsePostTag(content.content).content" :plugins="plugins"></Viewer>
+                </div>
             </template>
 
             <template #footer>
@@ -107,7 +107,10 @@ import { formatPrettyTime } from '@/utils/formatTime';
 import { parsePostTag } from '@/utils/content';
 import { Trash } from '@vicons/tabler';
 import { deleteComment } from '@/api/post';
+import { Viewer } from '@bytemd/vue-next'
+import gfm from '@bytemd/plugin-gfm'
 
+const plugins = [gfm()]
 const store = useStore();
 const router = useRouter();
 const replyAtUserID = ref(0);
