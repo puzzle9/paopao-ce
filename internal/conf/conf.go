@@ -33,6 +33,7 @@ var (
 	DocsServerSetting       *httpServerConf
 	MobileServerSetting     *grpcServerConf
 	AppSetting              *appConf
+	WasmSetting             *webAssemblyConf
 	CacheIndexSetting       *cacheIndexConf
 	SimpleCacheIndexSetting *simpleCacheIndexConf
 	BigCacheIndexSetting    *bigCacheIndexConf

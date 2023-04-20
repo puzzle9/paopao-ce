@@ -6,9 +6,10 @@ package internal
 
 import (
 	"github.com/rocboss/paopao-ce/internal/migration"
+	"github.com/rocboss/paopao-ce/internal/wasm"
 )
 
 func Initial() {
-	// migrate database if needed
 	migration.Run()
+	wasm.Initial()
 }

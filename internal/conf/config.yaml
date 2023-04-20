@@ -77,6 +77,9 @@ BigCacheIndex: # 使用BigCache缓存泡泡广场消息流
 RedisCacheIndex: # 使用Redis缓存泡泡广场消息流
   Verbose: False                # 是否打印cache操作的log
   ExpireInSecond: 300           # 多少秒(>0)后强制过期缓存
+WebAssembly: # WebAssembly运行时配置
+  RunMode: debug                # 运行模式 (debug | product)
+  RootDir: custom/data/wasm     # wasm程序库根目录
 Pyroscope: # Pyroscope配置
   AppName: "paopao-ce"                # application name
   Endpoint: "http://localhost:4040"   # Pyroscope server address

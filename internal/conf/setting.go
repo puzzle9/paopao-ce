@@ -85,6 +85,11 @@ type appConf struct {
 	MaxPageSize           int
 }
 
+type webAssemblyConf struct {
+	RunMode string
+	RootDir string
+}
+
 type cacheIndexConf struct {
 	MaxUpdateQPS int
 	MinWorker    int
