@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "paopao-ce.fullname" . }}-test-connection"
+  labels:
+    {{- include "paopao-ce.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args: ['{{ include "paopao-ce.fullname" . }}:{{ .Values.service.port }}']
+  restartPolicy: Never
