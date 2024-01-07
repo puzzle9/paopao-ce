@@ -22,7 +22,7 @@
                         }">
                             {{ message.sender_user.nickname }}
                         </router-link>
-                        <span class="username">
+                        <span v-if="store.state.desktopModelShow" class="username">
                             @{{ message.sender_user.username }}
                         </span>
                     </span>
@@ -35,29 +35,11 @@
                         }">
                             {{ message.receiver_user.nickname }}
                         </router-link>
-                        <span class="username">
+                        <span v-if="store.state.desktopModelShow" class="username">
                             @{{ message.receiver_user.username }}
                         </span>
                     </span>
                     <span class="nickname" v-else> 系统 </span>
-                    <n-tag
-                        v-if="message.type == 4"
-                        class="top-tag"
-                        type="success"
-                        size="small"
-                        round
-                    >
-                        私信
-                    </n-tag>
-                    <!-- <n-tag
-                        v-if="message.type != 4"
-                        class="top-tag"
-                        type="info"
-                        size="small"
-                        round
-                    >
-                        系统
-                    </n-tag> -->
                     <n-tag
                         v-if="isWhisperSender"
                         class="top-tag"
@@ -65,7 +47,7 @@
                         size="small"
                         round
                     >
-                        已发送
+                        私信已发送
                         <template #icon>
                              <n-icon :component="CheckmarkCircle" />
                         </template>
@@ -77,7 +59,7 @@
                         size="small"
                         round
                     >
-                        已接收
+                        私信已接收
                         <template #icon>
                              <n-icon :component="CheckmarkCircle" />
                         </template>
@@ -157,20 +139,26 @@
 <script setup lang="ts">
 import { h, computed } from 'vue';
 import type { Component } from 'vue'
-import { NIcon } from 'naive-ui'
+import { NIcon, useDialog } from 'naive-ui'
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
 import { DropdownOption } from 'naive-ui';
 import { ShareOutline, CheckmarkOutline, CloseOutline, CheckmarkDoneOutline } from '@vicons/ionicons5';
-import { readMessage, addFriend, rejectFriend } from '@/api/user';
+import { readMessage, addFriend, rejectFriend, followUser, unfollowUser } from '@/api/user';
 import { formatRelativeTime } from '@/utils/formatTime';
 import { MoreHorizFilled } from '@vicons/material';
-import { PaperPlaneOutline, CheckmarkCircle } from '@vicons/ionicons5'
+import { 
+    PaperPlaneOutline, 
+    CheckmarkCircle,
+    BodyOutline,
+    WalkOutline,
+} from '@vicons/ionicons5'
 
 const defaultavatar = 'https://assets.paopao.info/public/avatar/default/admin.png';
 
 const router = useRouter();
 const store = useStore();
+const dialog = useDialog();
 const props = withDefaults(
     defineProps<{
         message: Item.MessageProps;
@@ -187,22 +175,81 @@ const renderIcon = (icon: Component) => {
 };
 
 const actionOpts = computed(() => {
+    let user = props.message.type == 4 && props.message.sender_user_id == store.state.userInfo.id 
+                    ?  props.message.receiver_user
+                    : props.message.sender_user;
     let options: DropdownOption[] = [
         {
-            label: '私信',
+            label: '私信 @' + user.username,
             key: 'whisper',
             icon: renderIcon(PaperPlaneOutline)
         },
     ]
+    if (store.state.userInfo.id != user.id) {
+        if (user.is_following) {
+            options.push({
+                label: '取消关注 @' + user.username,
+                key: 'unfollow',
+                icon: renderIcon(WalkOutline)
+            })
+        } else {
+            options.push({
+                label: '关注 @' + user.username,
+                key: 'follow',
+                icon: renderIcon(BodyOutline)
+            })
+        }
+    }
     return options;
 });
 
 const emit = defineEmits<{
-    (e: 'send-whisper', user: Item.UserInfo): void;
+    (e: 'send-whisper', user: Item.UserInfo): void
+    (e: 'reload'): void
 }>();
 
+const onHandleFollowAction = (message: Item.MessageProps) => {
+    let user = message.type == 4 && message.sender_user_id == store.state.userInfo.id 
+                    ?  message.receiver_user
+                    : message.sender_user;
+    dialog.success({
+        title: '提示',
+        content:
+            '确定' + (user.is_following ? '取消关注 @' : '关注 @') + user.username + ' 吗？',
+        positiveText: '确定',
+        negativeText: '取消',
+        onPositiveClick: () => {
+            if (user.is_following) {
+                unfollowUser({
+                    user_id: user.id,
+                }).then((_res) => {
+                    window.$message.success('操作成功');
+                    user.is_following = false;
+                    // TODO: 这里暴力处理，简单重新加载，更好的做法是遍历所有message，如果是对应user就更新到新状态
+                    setTimeout(() => {
+                        emit('reload');
+                    }, 50);
+                })
+                .catch((_err) => {});
+            } else {
+                followUser({
+                    user_id: user.id,
+                }).then((_res) => {
+                    window.$message.success('关注成功');
+                    user.is_following = true;
+                    // TODO: 这里暴力处理，简单重新加载，更好的做法是遍历所有message，如果是对应user就更新到新状态
+                    setTimeout(() => {
+                        emit('reload');
+                    }, 50);
+                })
+                .catch((_err) => {});
+            }
+        },
+    });
+};
+
 const handleAction = (
-    item: 'whisper'
+    item: 'whisper' | 'follow' | 'unfollow'
 ) => {
     switch (item) {
         case 'whisper':
@@ -213,6 +260,10 @@ const handleAction = (
                     : message.sender_user;
                 emit('send-whisper', user);
             }
+            break;
+        case 'follow':
+        case 'unfollow':
+            onHandleFollowAction(props.message);
             break;
         default:
             break;
@@ -282,13 +333,12 @@ const handleReadMessage = (message: Item.MessageProps) => {
     if (message.is_read === 0) {
         readMessage({
             id: message.id,
+        }).then((_res) => {
+            message.is_read = 1;
         })
-            .then((res) => {
-                message.is_read = 1;
-            })
-            .catch((err) => {
-                console.log(err);
-            });
+        .catch((err) => {
+            console.log(err);
+        });
     }
 };
 </script>

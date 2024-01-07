@@ -18,15 +18,16 @@ RELEASE_DARWIN_AMD64 = $(RELEASE_ROOT)/darwin-amd64/$(PROJECT)
 RELEASE_DARWIN_ARM64 = $(RELEASE_ROOT)/darwin-arm64/$(PROJECT)
 RELEASE_WINDOWS_AMD64 = $(RELEASE_ROOT)/windows-amd64/$(PROJECT)
 
-BUILD_VERSION := $(shell git describe --tags --always | cut -f 1 -f 2 -d "-")
-BUILD_DATE := $(shell date +'%Y-%m-%d %H:%M:%S')
+BUILD_VERSION := $(shell git describe --tags --always)
+BUILD_DATE := $(shell date +'%Y-%m-%d %H:%M:%S %Z')
 SHA_SHORT := $(shell git rev-parse --short HEAD)
 
-TAGS = ""
 MOD_NAME = github.com/rocboss/paopao-ce
 LDFLAGS = -X "${MOD_NAME}/pkg/version.version=${BUILD_VERSION}" \
           -X "${MOD_NAME}/pkg/version.buildDate=${BUILD_DATE}" \
-          -X "${MOD_NAME}/pkg/version.commitID=${SHA_SHORT}" -w -s
+          -X "${MOD_NAME}/pkg/version.commitID=${SHA_SHORT}" \
+          -X "${MOD_NAME}/pkg/version.buildTags=${TAGS}" \
+		  -w -s
 
 all: fmt build
 
@@ -114,10 +115,10 @@ pre-commit: fmt
 
 .PHONY: install-protobuf-plugins
 install-protobuf-plugins:
-	@go install github.com/bufbuild/buf/cmd/buf@v1.25.0
-	@go install github.com/bufbuild/buf/cmd/protoc-gen-buf-breaking@v1.25.0
-	@go install github.com/bufbuild/buf/cmd/protoc-gen-buf-lint@v1.25.0
-	@go install github.com/bufbuild/connect-go/cmd/protoc-gen-connect-go@latest
+	@go install github.com/bufbuild/buf/cmd/buf@v1.28.1
+	@go install github.com/bufbuild/buf/cmd/protoc-gen-buf-breaking@v1.28.1
+	@go install github.com/bufbuild/buf/cmd/protoc-gen-buf-lint@v1.28.1
+	@go install connectrpc.com/connect/cmd/protoc-gen-connect-go@latest
 	@go install github.com/fullstorydev/grpcurl/cmd/grpcurl@latest
 	@go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 	@go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest

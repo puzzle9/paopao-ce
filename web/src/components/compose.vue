@@ -75,7 +75,7 @@
                         </n-upload-trigger>
 
                         <n-upload-trigger
-                          v-if="allowTweetVideo"
+                          v-if="store.state.profile.allowTweetVideo"
                           #="{ handleClick }" abstract>
                             <n-button
                                 :disabled="
@@ -105,7 +105,7 @@
                         </n-upload-trigger>
 
                         <n-upload-trigger
-                          v-if="allowTweetAttachment"
+                          v-if="store.state.profile.allowTweetAttachment"
                           #="{ handleClick }" abstract>
                             <n-button
                                 :disabled="
@@ -171,10 +171,10 @@
                                     :show-indicator="false"
                                     status="success"
                                     :stroke-width="10"
-                                    :percentage="(content.length / defaultTweetMaxLength) * 100"
+                                    :percentage="(content.length / store.state.profile.defaultTweetMaxLength) * 100"
                                 />
                             </template>
-                            {{ content.length }} / {{ defaultTweetMaxLength }}
+                            已输入{{ content.length }}字
                         </n-tooltip>
 
                         <n-button
@@ -196,7 +196,7 @@
                         v-if="attachmentContents.length > 0"
                     >
                         <n-input-number
-                            v-if="allowTweetAttachmentPrice"
+                            v-if="store.state.profile.allowTweetAttachmentPrice"
                             v-model:value="attachmentPrice"
                             :min="0"
                             :max="100000"
@@ -239,7 +239,7 @@
             <div class="login-wrap">
                 <span class="login-banner"> 登录后，精彩更多</span>
             </div>
-            <div v-if="!allowUserRegister" class="login-only-wrap">
+            <div v-if="!store.state.profile.allowUserRegister" class="login-only-wrap">
                 <n-button
                     strong
                     secondary
@@ -250,7 +250,7 @@
                     登录
                 </n-button>
             </div>
-            <div v-if="allowUserRegister" class="login-wrap">
+            <div v-if="store.state.profile.allowUserRegister" class="login-wrap">
                 <n-button
                     strong
                     secondary
@@ -317,12 +317,6 @@ const attachmentContents = ref<Item.AttachmentProps[]>([]);
 const visitType = ref<VisibilityEnum>(VisibilityEnum.PUBLIC);
 const defaultVisitType = ref<VisibilityEnum>(VisibilityEnum.PUBLIC)
 
-const useFriendship = (import.meta.env.VITE_USE_FRIENDSHIP.toLowerCase() === 'true')
-const defaultTweetMaxLength = Number(import.meta.env.VITE_DEFAULT_TWEET_MAX_LENGTH)
-const allowUserRegister = ref(import.meta.env.VITE_ALLOW_USER_REGISTER.toLowerCase() === 'true')
-const allowTweetVideo = ref(import.meta.env.VITE_ALLOW_TWEET_VIDEO.toLowerCase() === 'true')
-const allowTweetAttachment = ref(import.meta.env.VITE_ALLOW_TWEET_ATTACHMENT.toLowerCase() === 'true')
-const allowTweetAttachmentPrice = ref(import.meta.env.VITE_ALLOW_TWEET_ATTACHMENT_PRICE.toLowerCase() === 'true')
 const allowTweetVisibility = ref(import.meta.env.VITE_ALLOW_TWEET_VISIBILITY.toLowerCase() === 'true')
 const uploadGateway = import.meta.env.VITE_HOST + '/v1/attachment';
 
@@ -336,7 +330,7 @@ const visibilities = computed(()=> {
         {value: VisibilityEnum.PRIVATE, label: "私密"},
         {value: VisibilityEnum.Following, label: "关注可见"},
     ];
-    if (useFriendship) {
+    if (store.state.profile.useFriendship) {
         res.push({value: VisibilityEnum.FRIEND, label: "好友可见"});
     }
     return res;
@@ -410,8 +404,8 @@ const handleSearch = (k: string, prefix: string) => {
     }
 };
 const changeContent = (v: string) => {
-    if (v.length > defaultTweetMaxLength) {
-        content.value = v.substring(0, defaultTweetMaxLength);
+    if (v.length > store.state.profile.defaultTweetMaxLength) {
+        content.value = v.substring(0, store.state.profile.defaultTweetMaxLength);
     } else {
         content.value = v;
     }
@@ -594,17 +588,12 @@ const submitPost = () => {
     }
 
     submitting.value = true;
-    // TODO: 临时过渡，暂时将Following等价于Public
-    let fixedVisit = visitType.value;
-    if (fixedVisit == VisibilityEnum.Following) {
-        fixedVisit = VisibilityEnum.PUBLIC
-    }
     createPost({
         contents,
         tags: Array.from(new Set(tags)),
         users: Array.from(new Set(users)),
         attachment_price: +attachmentPrice.value * 100,
-        visibility: fixedVisit
+        visibility: visitType.value
     })
         .then((res) => {
             window.$message.success('发布成功');
@@ -632,8 +621,8 @@ const triggerAuth = (key: string) => {
     store.commit('triggerAuthKey', key);
 };
 onMounted(() => {
-    const defaultVisibility = import.meta.env.VITE_DEFAULT_TWEET_VISIBILITY.toLowerCase()
-    if (useFriendship && defaultVisibility === 'friend') {
+    const defaultVisibility = store.state.profile.defaultTweetVisibility
+    if (store.state.profile.useFriendship && defaultVisibility === 'friend') {
         defaultVisitType.value = VisibilityEnum.FRIEND
     } else if (defaultVisibility  === 'following') {
         defaultVisitType.value = VisibilityEnum.Following

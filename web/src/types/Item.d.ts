@@ -24,6 +24,8 @@ declare module Item {
     follows: number;
     /** 粉丝数 */
     followings: number;
+    /** 推文数 */
+    tweets_count?: number;
     /** 用户余额（分） */
     balance?: number;
     /** 用户状态 */
@@ -70,6 +72,8 @@ declare module Item {
     ip?: string;
     /** 评论者城市地址 */
     ip_loc: string;
+    /** 是否精选 */
+    is_essence: import("@/utils/IEnum").YesNoEnum;
     /** 点赞数 */
     thumbs_up_count: number;
     /** 是否点赞，0为未点赞，1为已点赞 */
@@ -138,6 +142,13 @@ declare module Item {
     phone?: string;
     is_following: boolean;
     created_on: number;
+  }
+
+  interface IndexTrendsItem {
+    nickname: string;
+    username: string;
+    avatar: string;
+    is_fresh: boolean;
   }
 
   /** slide bar item */
@@ -334,6 +345,8 @@ declare module Item {
     is_following?: 0 | 1;
     /** 是否置顶：0为未置顶，1为已置顶 */
     is_top?: 0 | 1;
+    /** 是否钉住：0为未钉住，1为已钉住 */
+    is_pin?: 0 | 1;
     /** 是否删除：0为未删除，1为已删除 */
     is_del?: 0 | 1;
   }

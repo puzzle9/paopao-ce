@@ -37,7 +37,12 @@ declare module NetParams {
 
   interface UserGetUnreadMsgCount {}
 
+  interface ReadMessageReq {
+    id: number;
+  }
+
   interface UserGetMessages {
+    style: "all" | "system" | "whisper" | "requesting" | "unread";
     page: number;
     page_size: number;
   }
@@ -62,6 +67,8 @@ declare module NetParams {
     id: number;
     status: number;
   }
+
+  interface SiteInfoReq {}
 
   interface FollowUserReq {
     user_id: number;
@@ -119,6 +126,11 @@ declare module NetParams {
     page_size: number;
   }
 
+  interface IndexTrendsReq {
+    page: number;
+    page_size: number;
+  }
+
   interface GetUserFollows {
     username: string;
     page: number;
@@ -150,6 +162,7 @@ declare module NetParams {
   interface PostGetPosts {
     query: string | null;
     type: string;
+    style: "newest" | "hots" | "following" | "search";
     page: number;
     page_size: number;
   }
@@ -189,14 +202,14 @@ declare module NetParams {
   }
 
   interface PostGetTags {
-    type: "hot" | "new" | "follow" | "hot_extral";
+    type: "hot" | "new" | "follow" | "pin" | "hot_extral";
     num: number;
     extral_num?: number;
   }
 
   interface PostGetPostComments {
     id: number;
-    sort_strategy: "default" | "newest";
+    style: "default" | "hots" | "newest";
     page?: number;
     page_size?: number;
   }
@@ -244,6 +257,10 @@ declare module NetParams {
     id: number;
   }
 
+  interface PostHighlightComment {
+    id: number;
+  }
+
   interface PostCreateCommentReply {
     /** 艾特的用户UID */
     at_user_id: number;
@@ -258,6 +275,10 @@ declare module NetParams {
   }
 
   interface PostStickTopic {
+    topic_id: number;
+  }
+
+  interface PostPinTopic {
     topic_id: number;
   }
 

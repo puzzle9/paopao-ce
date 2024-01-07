@@ -8,6 +8,7 @@
             v-if="store.state.userInfo.id > 0"
         >
             <!-- 基础信息 -->
+            <!-- <n-spin :show="false" > -->
             <div class="profile-baseinfo">
                 <div class="avatar">
                     <n-avatar :size="72" :src="store.state.userInfo.avatar" />
@@ -38,7 +39,7 @@
                                     },
                                 }"
                             >
-                                关注&nbsp;&nbsp;{{ store.state.userInfo.follows }}
+                                关注&nbsp;&nbsp;{{ prettyQuoteNum(store.state.userInfo.follows) }}
                             </router-link>
                         </span>
                         <span class="info-item">
@@ -54,18 +55,35 @@
                                     },
                                 }"
                             >
-                                粉丝&nbsp;&nbsp;{{ store.state.userInfo.followings }}
+                                粉丝&nbsp;&nbsp;{{ prettyQuoteNum(store.state.userInfo.followings) }}
                             </router-link>
+                        </span>
+                        <span class="info-item">
+                            泡泡&nbsp;&nbsp;{{ prettyQuoteNum(store.state.userInfo.tweets_count) }}
                         </span>
                     </div>
                 </div>
+
+                <div class="user-opts">
+                    <n-dropdown placement="bottom-end" trigger="click" size="small" :options="userOptions"
+                        @select="handleUserAction">
+                        <n-button quaternary circle>
+                            <template #icon>
+                                <n-icon>
+                                    <more-horiz-filled />
+                                </n-icon>
+                            </template>
+                        </n-button>
+                    </n-dropdown>
+                </div>
             </div>
+            <!-- </n-spin> -->
             <n-tabs class="profile-tabs-wrap" type="line" animated @update:value="changeTab">
-                <n-tab-pane name="post" tab="泡泡"> </n-tab-pane>
-                <n-tab-pane name="comment" tab="评论"> </n-tab-pane>
-                <n-tab-pane name="highlight" tab="亮点"> </n-tab-pane>
-                <n-tab-pane name="media" tab="图文"> </n-tab-pane>
-                <n-tab-pane name="star" tab="喜欢"> </n-tab-pane>
+                <n-tab-pane name="post" tab="泡泡"></n-tab-pane>
+                <n-tab-pane name="comment" tab="评论"></n-tab-pane>
+                <n-tab-pane name="highlight" tab="亮点"></n-tab-pane>
+                <n-tab-pane name="media" tab="图文"></n-tab-pane>
+                <n-tab-pane name="star" tab="喜欢"></n-tab-pane>
             </n-tabs>
             <div v-if="loading && list.length === 0" class="skeleton-wrap">
                 <post-skeleton :num="pageSize" />
@@ -74,16 +92,99 @@
                 <div class="empty-wrap" v-if="list.length === 0">
                     <n-empty size="large" description="暂无数据" />
                 </div>
-
                 <div v-if="store.state.desktopModelShow">
-                    <n-list-item v-for="post in list" :key="post.id">
-                        <post-item :post="post" @send-whisper="onSendWhisper" />
-                    </n-list-item>
+                    <div v-if="pageType === 'post'">
+                        <n-list-item v-for="post in postList" :key="post.id">
+                            <post-item :post="post" 
+                                :isOwner="store.state.userInfo.id == post.user_id" 
+                                :addFollowAction="true"
+                                @send-whisper="onSendWhisper"
+                                @handle-follow-action="onHandleFollowAction" />
+                        </n-list-item>
+                    </div>
+                    <div v-if="pageType === 'comment'">
+                        <n-list-item v-for="post in commentList" :key="post.id">
+                            <post-item :post="post" 
+                                :isOwner="store.state.userInfo.id == post.user_id" 
+                                :addFollowAction="true"
+                                @send-whisper="onSendWhisper"
+                                @handle-follow-action="onHandleFollowAction" />
+                        </n-list-item>
+                    </div>
+                    <div v-if="pageType === 'highlight'">
+                        <n-list-item v-for="post in highlightList" :key="post.id">
+                            <post-item :post="post" 
+                                :isOwner="store.state.userInfo.id == post.user_id" 
+                                :addFollowAction="true"
+                                @send-whisper="onSendWhisper"
+                                @handle-follow-action="onHandleFollowAction" />
+                        </n-list-item>
+                    </div>
+                    <div v-if="pageType === 'media'">
+                        <n-list-item v-for="post in mediaList" :key="post.id">
+                            <post-item :post="post" 
+                                :isOwner="store.state.userInfo.id == post.user_id" 
+                                :addFollowAction="true"
+                                @send-whisper="onSendWhisper"
+                                @handle-follow-action="onHandleFollowAction" />
+                        </n-list-item>
+                    </div>
+                    <div v-if="pageType === 'star'">
+                        <n-list-item v-for="post in starList" :key="post.id">
+                            <post-item :post="post" 
+                                :isOwner="store.state.userInfo.id == post.user_id" 
+                                :addFollowAction="true"
+                                @send-whisper="onSendWhisper"
+                                @handle-follow-action="onHandleFollowAction" />
+                        </n-list-item>
+                    </div>
                 </div>
                 <div v-else>
-                    <n-list-item v-for="post in list" :key="post.id">
-                        <mobile-post-item :post="post" @send-whisper="onSendWhisper" />
-                    </n-list-item>
+                    <div v-if="pageType === 'post'">
+                        <n-list-item v-for="post in postList" :key="post.id">
+                            <mobile-post-item :post="post"
+                                :isOwner="store.state.userInfo.id == post.user_id" 
+                                :addFollowAction="true"
+                                @send-whisper="onSendWhisper"
+                                @handle-follow-action="onHandleFollowAction" />
+                        </n-list-item>
+                    </div>
+                    <div v-if="pageType === 'comment'">
+                        <n-list-item v-for="post in commentList" :key="post.id">
+                            <mobile-post-item :post="post"
+                                :isOwner="store.state.userInfo.id == post.user_id" 
+                                :addFollowAction="true"
+                                @send-whisper="onSendWhisper"
+                                @handle-follow-action="onHandleFollowAction" />
+                        </n-list-item>
+                    </div>
+                    <div v-if="pageType === 'highlight'">
+                        <n-list-item v-for="post in highlightList" :key="post.id">
+                            <mobile-post-item :post="post"
+                                :isOwner="store.state.userInfo.id == post.user_id" 
+                                :addFollowAction="true"
+                                @send-whisper="onSendWhisper"
+                                @handle-follow-action="onHandleFollowAction" />
+                        </n-list-item>
+                    </div>
+                    <div v-if="pageType === 'media'">
+                        <n-list-item v-for="post in mediaList" :key="post.id">
+                            <mobile-post-item :post="post"
+                                :isOwner="store.state.userInfo.id == post.user_id" 
+                                :addFollowAction="true"
+                                @send-whisper="onSendWhisper"
+                                @handle-follow-action="onHandleFollowAction" />
+                        </n-list-item>
+                    </div>
+                    <div v-if="pageType === 'star'">
+                        <n-list-item v-for="post in starList" :key="post.id">
+                            <mobile-post-item :post="post"
+                                :isOwner="store.state.userInfo.id == post.user_id" 
+                                :addFollowAction="true"
+                                @send-whisper="onSendWhisper"
+                                @handle-follow-action="onHandleFollowAction" />
+                        </n-list-item>
+                    </div>
                 </div>
             </div>
             <!-- 私信组件 -->
@@ -104,15 +205,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
+import { h, ref, Component, onMounted, computed, watch } from 'vue';
+import { NIcon } from 'naive-ui';
 import { useStore } from 'vuex';
-import { useRoute } from 'vue-router';
-import { getUserPosts } from '@/api/user';
+import { useRoute, useRouter } from 'vue-router';
+import { useDialog, DropdownOption } from 'naive-ui';
+import { getUserPosts, followUser, unfollowUser } from '@/api/user';
 import { formatDate } from '@/utils/formatTime';
+import { prettyQuoteNum } from '@/utils/count';
 import InfiniteLoading from "v3-infinite-loading";
+import {
+    SettingsOutline,
+} from '@vicons/ionicons5';
+import { MoreHorizFilled } from '@vicons/material';
 
 const store = useStore();
 const route = useRoute();
+const router = useRouter();
+const dialog = useDialog();
 const loading = ref(false);
 const noMore = ref(false);
 const list = ref<Item.PostProps[]>([]);
@@ -150,6 +260,40 @@ const whisperReceiver = ref<Item.UserInfo>({
     status: 1,
 });
 
+const renderIcon = (icon: Component) => {
+  return () => {
+    return h(NIcon, null, {
+      default: () => h(icon)
+    })
+  }
+};
+
+const userOptions = computed(() => {
+    let options: DropdownOption[] = [{
+        label: '设置',
+        key: 'setting',
+        icon: renderIcon(SettingsOutline)
+    }];
+    return options;
+});
+
+const handleUserAction = (
+    item: 'setting'
+) => {
+    switch (item) {
+        case 'setting':
+            router.push({
+                name: 'setting',
+                query: {
+                    t: (new Date().getTime())
+                }, 
+            });
+            break;
+        default:
+            break;
+    }
+};
+
 const onSendWhisper =  (user: Item.UserInfo) => {
     whisperReceiver.value = user;
     showWhisper.value = true;
@@ -158,6 +302,53 @@ const onSendWhisper =  (user: Item.UserInfo) => {
 const whisperSuccess = () => {
     showWhisper.value = false;
 };
+
+const onHandleFollowAction = (post: Item.PostProps) => {
+    dialog.success({
+        title: '提示',
+        content:
+            '确定' + (post.user.is_following ? '取消关注 @' : '关注 @') + post.user.username + ' 吗？',
+        positiveText: '确定',
+        negativeText: '取消',
+        onPositiveClick: () => {
+            if (post.user.is_following) {
+                unfollowUser({
+                    user_id: post.user.id,
+                }).then((_res) => {
+                    window.$message.success('操作成功');
+                    postFollowAction(post.user_id, false);
+                })
+                .catch((_err) => {});
+            } else {
+                followUser({
+                    user_id: post.user.id,
+                }).then((_res) => {
+                    window.$message.success('关注成功');
+                    postFollowAction(post.user_id, true);
+                })
+                .catch((_err) => {});
+            }
+        },
+    });
+};
+
+function postFollowAction(userId: number, isFollowing: boolean) {
+    updateFolloing(postList.value, userId, isFollowing);
+    updateFolloing(commentList.value, userId, isFollowing);
+    updateFolloing(highlightList.value, userId, isFollowing);
+    updateFolloing(mediaList.value, userId, isFollowing);
+    updateFolloing(starList.value, userId, isFollowing);
+}
+
+function updateFolloing(posts: Item.PostProps[], userId: number, isFollowing: boolean) {
+    if (posts && posts.length > 0) {
+        for (let index in posts) {
+            if (posts[index].user_id == userId) {
+                posts[index].user.is_following = isFollowing;
+            }
+        }
+    }
+}
 
 const loadPage = () => {
     switch(pageType.value) {
@@ -459,6 +650,11 @@ watch(
         .top-tag {
             transform: scale(0.75);
         }
+    }
+
+    .user-opts {
+        position: relative;
+        opacity: 0.75;
     }
 }
 

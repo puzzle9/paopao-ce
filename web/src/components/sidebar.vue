@@ -36,12 +36,12 @@
             </div>
         </div>
         <div class="user-wrap" v-else>
-            <div v-if="!allowUserRegister" class="login-only-wrap">
+            <div v-if="!store.state.profile.allowUserRegister" class="login-only-wrap">
                 <n-button strong secondary round type="primary" @click="triggerAuth('signin')">
                     登录
                 </n-button>
             </div>
-            <div v-if="allowUserRegister" class="login-wrap">
+            <div v-if="store.state.profile.allowUserRegister" class="login-wrap">
                 <n-button strong secondary round type="primary" @click="triggerAuth('signin')">
                     登录
                 </n-button>
@@ -80,21 +80,19 @@ const hasUnreadMsg = ref(false);
 const selectedPath = ref<any>(route.name || '');
 const msgLoop = ref();
 
-const useFrindship = (import.meta.env.VITE_USE_FRIENDSHIP.toLowerCase() === 'true');
 const enableAnnoucement = (import.meta.env.VITE_ENABLE_ANOUNCEMENT.toLowerCase() === 'true');
-const enableWallet = (import.meta.env.VITE_ENABLE_WALLET.toLocaleLowerCase() === 'true');
-const allowUserRegister = ref(import.meta.env.VITE_ALLOW_USER_REGISTER.toLowerCase() === 'true');
-const defMsgLoopInterval = Number(import.meta.env.VITE_DEFAULT_MSG_LOOP_INTERVAL);
 
 watch(route, () => {
     selectedPath.value = route.name;
 });
 watch(store.state, () => {
+    hasUnreadMsg.value = store.state.unreadMsgCount > 0;
     if (store.state.userInfo.id > 0) {
         if (!msgLoop.value) {
             getUnreadMsgCount()
                 .then((res) => {
                     hasUnreadMsg.value = res.count > 0;
+                    store.commit("updateUnreadMsgCount", res.count)
                 })
                 .catch((err) => {
                     console.log(err);
@@ -104,11 +102,12 @@ watch(store.state, () => {
                 getUnreadMsgCount()
                     .then((res) => {
                         hasUnreadMsg.value = res.count > 0;
+                        store.commit("updateUnreadMsgCount", res.count)
                     })
                     .catch((err) => {
                         console.log(err);
                     });
-            }, defMsgLoopInterval);
+            }, store.state.profile.defaultMsgLoopInterval);
         }
     } else {
         if (msgLoop.value) {
@@ -163,7 +162,7 @@ const menuOptions = computed(() => {
         icon: () => h(BookmarksOutline),
         href: '/collection',
     });
-    if (useFrindship) {
+    if (store.state.profile.useFriendship) {
         options.push({
             label: '好友',
             key: 'contacts',
@@ -171,7 +170,7 @@ const menuOptions = computed(() => {
             href: '/contacts',
         });
     }   
-    if (enableWallet) {
+    if (store.state.profile.enableWallet) {
         options.push({
             label: '钱包',
             key: 'wallet',

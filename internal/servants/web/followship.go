@@ -8,6 +8,7 @@ import (
 	"github.com/alimy/mir/v4"
 	"github.com/gin-gonic/gin"
 	api "github.com/rocboss/paopao-ce/auto/api/v1"
+	"github.com/rocboss/paopao-ce/internal/dao/cache"
 	"github.com/rocboss/paopao-ce/internal/model/web"
 	"github.com/rocboss/paopao-ce/internal/servants/base"
 	"github.com/rocboss/paopao-ce/internal/servants/chain"
@@ -34,7 +35,7 @@ func (s *followshipSrv) ListFollowings(r *web.ListFollowingsReq) (*web.ListFollo
 		logrus.Errorf("Ds.GetUserByUsername err: %s", err)
 		return nil, web.ErrNoExistUsername
 	}
-	res, err := s.Ds.ListFollowings(he.ID, r.PageSize, r.Page-1)
+	res, err := s.Ds.ListFollowings(he.ID, r.PageSize, (r.Page-1)*r.PageSize)
 	if err != nil {
 		logrus.Errorf("Ds.ListFollowings err: %s", err)
 		return nil, web.ErrListFollowingsFailed
@@ -54,7 +55,7 @@ func (s *followshipSrv) ListFollows(r *web.ListFollowsReq) (*web.ListFollowsResp
 		logrus.Errorf("Ds.GetUserByUsername err: %s", err)
 		return nil, web.ErrNoExistUsername
 	}
-	res, err := s.Ds.ListFollows(he.ID, r.PageSize, r.Page-1)
+	res, err := s.Ds.ListFollows(he.ID, r.PageSize, (r.Page-1)*r.PageSize)
 	if err != nil {
 		logrus.Errorf("Ds.ListFollows err: %s", err)
 		return nil, web.ErrListFollowsFailed
@@ -84,6 +85,12 @@ func (s *followshipSrv) UnfollowUser(r *web.UnfollowUserReq) mir.Error {
 		logrus.Errorf("Ds.UnfollowUser err: %s userId: %d followId: %d", err, r.User.ID, r.UserId)
 		return web.ErrUnfollowUserFailed
 	}
+	// 触发缓存更新事件
+	// TODO: 合并成一个事件
+	cache.OnCacheMyFollowIdsEvent(s.Ds, r.User.ID)
+	cache.OnExpireIndexTweetEvent(r.User.ID)
+	onMessageActionEvent(_messageActionFollow, r.User.ID)
+	onTrendsActionEvent(_trendsActionUnfollowUser, r.User.ID)
 	return nil
 }
 
@@ -97,6 +104,12 @@ func (s *followshipSrv) FollowUser(r *web.FollowUserReq) mir.Error {
 		logrus.Errorf("Ds.FollowUser err: %s userId: %d followId: %d", err, r.User.ID, r.UserId)
 		return web.ErrUnfollowUserFailed
 	}
+	// 触发缓存更新事件
+	// TODO: 合并成一个事件
+	cache.OnCacheMyFollowIdsEvent(s.Ds, r.User.ID)
+	cache.OnExpireIndexTweetEvent(r.User.ID)
+	onMessageActionEvent(_messageActionFollow, r.User.ID)
+	onTrendsActionEvent(_trendsActionFollowUser, r.User.ID)
 	return nil
 }
 

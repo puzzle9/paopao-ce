@@ -99,6 +99,17 @@ export const getContacts = (
   });
 };
 
+/** 获取联系人列表 */
+export const getIndexTrends = (
+  params: NetParams.IndexTrendsReq
+): Promise<NetReq.IndexTrendsResp> => {
+  return request({
+    method: "get",
+    url: "/v1/trends/index",
+    params,
+  });
+};
+
 /** 发布动态 */
 export const createPost = (
   data: NetParams.PostCreatePost
@@ -231,6 +242,17 @@ export const deleteComment = (
   });
 };
 
+/** 精选评论 */
+export const highlightComment = (
+  data: NetParams.PostHighlightComment
+): Promise<NetReq.PostHighlightComment> => {
+  return request({
+    method: "post",
+    url: "/v1/post/comment/highlight",
+    data,
+  });
+};
+
 /** 发布评论回复 */
 export const createCommentReply = (
   data: NetParams.PostCreateCommentReply
@@ -260,6 +282,17 @@ export const stickTopic = (
   return request({
     method: "post",
     url: "/v1/topic/stick",
+    data,
+  });
+};
+
+/** 置顶/取消置顶话题 */
+export const pinTopic = (
+  data: NetParams.PostPinTopic
+): Promise<NetReq.PostPinTopic> => {
+  return request({
+    method: "post",
+    url: "/v1/topic/pin",
     data,
   });
 };

@@ -46,6 +46,7 @@ CREATE TABLE "p_comment" (
   "user_id" integer NOT NULL,
   "ip" text(64) NOT NULL,
   "ip_loc" text(64) NOT NULL,
+  "is_essence" integer NOT NULL DEFAULT 0,
   "thumbs_up_count" integer NOT NULL DEFAULT 0, -- 点赞数
 	"thumbs_down_count" integer NOT NULL DEFAULT 0, -- 点踩数
   "created_on" integer NOT NULL,
@@ -92,6 +93,23 @@ CREATE TABLE "p_comment_reply" (
   "deleted_on" integer NOT NULL,
   "is_del" integer NOT NULL,
   PRIMARY KEY ("id")
+);
+
+-- ----------------------------
+-- Table structure for p_comment_metric
+-- ----------------------------
+CREATE TABLE p_comment_metric (
+	"id" integer,
+	"comment_id" integer NOT NULL,
+	"rank_score" integer NOT NULL DEFAULT 0,
+	"incentive_score" integer NOT NULL DEFAULT 0,
+	"decay_factor" integer NOT NULL DEFAULT 0,
+	"motivation_factor" integer NOT NULL DEFAULT 0,
+	"is_del" integer NOT NULL DEFAULT 0,
+	"created_on" integer NOT NULL DEFAULT 0,
+	"modified_on" integer NOT NULL DEFAULT 0,
+	"deleted_on" integer NOT NULL DEFAULT 0,
+	PRIMARY KEY ("id")
 );
 
 -- ----------------------------
@@ -209,8 +227,26 @@ CREATE TABLE "p_post" (
   "modified_on" integer NOT NULL,
   "deleted_on" integer NOT NULL,
   "is_del" integer NOT NULL,
-  "visibility" integer NOT NULL,
+  "visibility" integer NOT NULL,  -- 可见性: 0私密 10充电可见 20订阅可见 30保留 40保留 50好友可见 60关注可见 70保留 80保留 90公开
   PRIMARY KEY ("id")
+);
+
+-- ----------------------------
+-- Table structure for p_post_metric
+-- ----------------------------
+DROP TABLE IF EXISTS "p_post_metric";
+CREATE TABLE "p_post_metric" (
+	"id" integer NOT NULL,
+	"post_id" integer NOT NULL,
+	"rank_score" integer NOT NULL,
+	"incentive_score" integer NOT NULL DEFAULT 0,
+	"decay_factor" integer NOT NULL DEFAULT 0,
+	"motivation_factor" integer NOT NULL DEFAULT 0,
+	"is_del" integer NOT NULL DEFAULT 0,
+	"created_on" integer NOT NULL DEFAULT 0,
+	"modified_on" integer NOT NULL DEFAULT 0,
+	"deleted_on" integer NOT NULL DEFAULT 0,
+	PRIMARY KEY ("id")
 );
 
 -- ----------------------------
@@ -305,6 +341,7 @@ CREATE TABLE "p_topic_user" (
 	"remark" text ( 512 ),-- 备注
 	"quote_num" integer,-- 引用数
 	"is_top" integer NOT NULL DEFAULT 0,-- 是否置顶 0 为未置顶、1 为已置顶
+  "is_pin" integer NOT NULL DEFAULT 0,-- 是否钉住 0 为未钉住、1 为已钉住
 	"created_on" integer NOT NULL DEFAULT 0,-- 创建时间
 	"modified_on" integer NOT NULL DEFAULT 0,-- 修改时间
 	"deleted_on" integer NOT NULL DEFAULT 0,-- 删除时间
@@ -334,6 +371,21 @@ CREATE TABLE "p_user" (
   "deleted_on" integer NOT NULL,
   "is_del" integer NOT NULL,
   PRIMARY KEY ("id")
+);
+
+-- ----------------------------
+-- Table structure for p_user_metric
+-- ----------------------------
+CREATE TABLE "p_user_metric" (
+	"id" integer,
+	"user_id" integer NOT NULL,
+	"tweets_count" integer NOT NULL DEFAULT 0,
+	"latest_trends_on" integer NOT NULL DEFAULT 0,
+	"is_del" integer NOT NULL DEFAULT 0,
+	"created_on" integer NOT NULL DEFAULT 0,
+	"modified_on" integer NOT NULL DEFAULT 0,
+	"deleted_on" integer NOT NULL DEFAULT 0,
+	PRIMARY KEY ("id")
 );
 
 -- ----------------------------
@@ -406,6 +458,14 @@ FROM
 WHERE
 	P.is_del = 0;
 
+DROP VIEW IF EXISTS p_user_relation;
+CREATE VIEW p_user_relation AS 
+SELECT user_id, friend_id he_uid, 5 AS style 
+FROM p_contact WHERE status=2 AND is_del=0
+UNION
+SELECT user_id, follow_id he_uid, 10 AS style 
+FROM p_following WHERE is_del=0;
+
 -- ----------------------------
 -- Indexes structure for table p_attachment
 -- ----------------------------
@@ -471,6 +531,15 @@ ON "p_comment_reply" (
 );
 
 -- ----------------------------
+-- Indexes structure for table p_comment_metric
+-- ----------------------------
+CREATE INDEX "idx_comment_metric_comment_id_rank_score"
+ON "p_comment_metric" (
+	"comment_id" ASC,
+	"rank_score" ASC
+);
+
+-- ----------------------------
 -- Indexes structure for table idx_tweet_comment_thumbs_uid_tid
 -- ----------------------------
 CREATE INDEX "idx_tweet_comment_thumbs_uid_tid"
@@ -529,6 +598,15 @@ ON "p_post" (
 CREATE INDEX "idx_post_visibility"
 ON "p_post" (
   "visibility" ASC
+);
+
+-- ----------------------------
+-- Indexes structure for table idx_post_metric_post_id_rank_score
+-- ----------------------------
+CREATE INDEX "idx_post_metric_post_id_rank_score"
+ON "p_post_metric" (
+  "post_id" ASC,
+  "rank_score" ASC
 );
 
 -- ----------------------------
@@ -603,6 +681,11 @@ ON "p_topic_user" (
   "topic_id",
   "user_id"
 );
+CREATE INDEX "main"."idx_topic_user_uid_ispin"
+ON "p_topic_user" (
+  "user_id" ASC,
+  "is_pin" ASC
+);
 
 -- ----------------------------
 -- Indexes structure for table p_user
@@ -614,6 +697,16 @@ ON "p_user" (
 CREATE UNIQUE INDEX "idx_user_username"
 ON "p_user" (
   "username" ASC
+);
+
+-- ----------------------------
+-- Indexes structure for table p_user_metric
+-- ----------------------------
+CREATE INDEX "idx_user_metric_user_id_tweets_count_trends"
+ON "p_user_metric" (
+  	"user_id" ASC,
+  	"tweets_count" ASC,
+	"latest_trends_on" ASC
 );
 
 -- ----------------------------

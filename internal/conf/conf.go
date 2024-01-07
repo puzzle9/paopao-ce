@@ -26,6 +26,7 @@ var (
 	PostgresSetting         *postgresConf
 	Sqlite3Setting          *sqlite3Conf
 	PprofServerSetting      *httpServerConf
+	MetricsServerSetting    *httpServerConf
 	WebServerSetting        *httpServerConf
 	AdminServerSetting      *httpServerConf
 	SpaceXServerSetting     *httpServerConf
@@ -35,7 +36,10 @@ var (
 	DocsServerSetting       *httpServerConf
 	MobileServerSetting     *grpcServerConf
 	AppSetting              *appConf
+	CacheSetting            *cacheConf
 	EventManagerSetting     *eventManagerConf
+	MetricManagerSetting    *metricManagerConf
+	JobManagerSetting       *jobManagerConf
 	CacheIndexSetting       *cacheIndexConf
 	SimpleCacheIndexSetting *simpleCacheIndexConf
 	BigCacheIndexSetting    *bigCacheIndexConf
@@ -53,6 +57,7 @@ var (
 	S3Setting               *s3Conf
 	LocalOSSSetting         *localossConf
 	JWTSetting              *jwtConf
+	WebProfileSetting       *WebProfileConf
 )
 
 func setupSetting(suite []string, noDefault bool) error {
@@ -70,8 +75,12 @@ func setupSetting(suite []string, noDefault bool) error {
 
 	objects := map[string]any{
 		"App":               &AppSetting,
+		"Cache":             &CacheSetting,
 		"EventManager":      &EventManagerSetting,
+		"MetricManager":     &MetricManagerSetting,
+		"JobManager":        &JobManagerSetting,
 		"PprofServer":       &PprofServerSetting,
+		"MetricsServer":     &MetricsServerSetting,
 		"WebServer":         &WebServerSetting,
 		"AdminServer":       &AdminServerSetting,
 		"SpaceXServer":      &SpaceXServerSetting,
@@ -109,6 +118,7 @@ func setupSetting(suite []string, noDefault bool) error {
 		"MinIO":             &MinIOSetting,
 		"LocalOSS":          &LocalOSSSetting,
 		"S3":                &S3Setting,
+		"WebProfile":        &WebProfileSetting,
 	}
 	for k, v := range objects {
 		err := vp.UnmarshalKey(k, v)
@@ -117,7 +127,9 @@ func setupSetting(suite []string, noDefault bool) error {
 		}
 	}
 
-	EventManagerSetting.TickWaitTime *= time.Second
+	CacheSetting.CientSideCacheExpire *= time.Second
+	EventManagerSetting.MaxIdleTime *= time.Second
+	MetricManagerSetting.MaxIdleTime *= time.Second
 	JWTSetting.Expire *= time.Second
 	SimpleCacheIndexSetting.CheckTickDuration *= time.Second
 	SimpleCacheIndexSetting.ExpireTickDuration *= time.Second

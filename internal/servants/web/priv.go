@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/alimy/mir/v4"
+	"github.com/alimy/tryst/cfg"
 	"github.com/disintegration/imaging"
 	"github.com/gin-gonic/gin"
 	"github.com/gofrs/uuid/v5"
@@ -21,25 +22,21 @@ import (
 	"github.com/rocboss/paopao-ce/internal/model/web"
 	"github.com/rocboss/paopao-ce/internal/servants/base"
 	"github.com/rocboss/paopao-ce/internal/servants/chain"
+	"github.com/rocboss/paopao-ce/pkg/types"
 	"github.com/rocboss/paopao-ce/pkg/utils"
 	"github.com/rocboss/paopao-ce/pkg/xerror"
 	"github.com/sirupsen/logrus"
 )
 
 var (
-	_ api.Priv = (*privSrv)(nil)
+	_ api.Priv      = (*privSrv)(nil)
+	_ api.PrivChain = (*privChain)(nil)
 
 	_uploadAttachmentTypeMap = map[string]ms.AttachmentType{
 		"public/image":  ms.AttachmentTypeImage,
 		"public/avatar": ms.AttachmentTypeImage,
 		"public/video":  ms.AttachmentTypeVideo,
 		"attachment":    ms.AttachmentTypeOther,
-	}
-	_uploadAttachmentTypes = map[string]cs.AttachmentType{
-		"public/image":  cs.AttachmentTypeImage,
-		"public/avatar": cs.AttachmentTypeImage,
-		"public/video":  cs.AttachmentTypeVideo,
-		"attachment":    cs.AttachmentTypeOther,
 	}
 )
 
@@ -48,6 +45,17 @@ type privSrv struct {
 	*base.DaoServant
 
 	oss core.ObjectStorageService
+}
+
+type privChain struct {
+	api.UnimplementedPrivChain
+}
+
+func (s *privChain) ChainCreateTweet() (res gin.HandlersChain) {
+	if cfg.If("UseAuditHook") {
+		res = gin.HandlersChain{chain.AuditHook()}
+	}
+	return
 }
 
 func (s *privSrv) Chain() gin.HandlersChain {
@@ -75,6 +83,8 @@ func (s *privSrv) ThumbsDownTweetComment(req *web.TweetCommentThumbsReq) mir.Err
 		logrus.Errorf("thumbs down tweet comment error: %s req:%v", err, req)
 		return web.ErrThumbsDownTweetComment
 	}
+	// 缓存处理
+	onCommentActionEvent(req.TweetId, req.CommentId, _commentActionThumbsDown)
 	return nil
 }
 
@@ -83,6 +93,8 @@ func (s *privSrv) ThumbsUpTweetComment(req *web.TweetCommentThumbsReq) mir.Error
 		logrus.Errorf("thumbs up tweet comment error: %s req:%v", err, req)
 		return web.ErrThumbsUpTweetComment
 	}
+	// 缓存处理
+	onCommentActionEvent(req.TweetId, req.CommentId, _commentActionThumbsUp)
 	return nil
 }
 
@@ -113,13 +125,28 @@ func (s *privSrv) StickTopic(req *web.StickTopicReq) (*web.StickTopicResp, mir.E
 	}, nil
 }
 
+func (s *privSrv) PinTopic(req *web.PinTopicReq) (*web.PinTopicResp, mir.Error) {
+	status, err := s.Ds.PinTopic(req.Uid, req.TopicId)
+	if err != nil {
+		logrus.Errorf("user(%d) pin topic(%d) failed: %s", req.Uid, req.TopicId, err)
+		return nil, web.ErrPinTopicFailed
+	}
+	return &web.PinTopicResp{
+		PinStatus: status,
+	}, nil
+}
+
 func (s *privSrv) UploadAttachment(req *web.UploadAttachmentReq) (*web.UploadAttachmentResp, mir.Error) {
 	defer req.File.Close()
 
 	// 生成随机路径
 	randomPath := uuid.Must(uuid.NewV4()).String()
 	ossSavePath := req.UploadType + "/" + generatePath(randomPath[:8]) + "/" + randomPath[9:] + req.FileExt
-	objectUrl, err := s.oss.PutObject(ossSavePath, req.File, req.FileSize, req.ContentType, false)
+	// NOTE: 注意这里将req.File Wrap到一个io.Reader的实例对象中是为了避免下游接口去主动调Close，req.File本身是实现了
+	// io.Closer接口的，有的下游接口会断言传参是否实现了io.Closer接口，如果实现了会主动去调，我们这里因为下文中可能还要继续
+	// 使用req.File所以应避免下游Close，否则会出现潜在的bug，比如这里的场景就是传一个超大的图片(>10MB)可能就会触发bug了。
+	data := types.PureReader(req.File)
+	objectUrl, err := s.oss.PutObject(ossSavePath, data, req.FileSize, req.ContentType, false)
 	if err != nil {
 		logrus.Errorf("oss.putObject err: %s", err)
 		return nil, web.ErrFileUploadFailed
@@ -242,7 +269,7 @@ func (s *privSrv) CreateTweet(req *web.CreateTweetReq) (_ *web.CreateTweetResp, 
 		IP:              req.ClientIP,
 		IPLoc:           utils.GetIPLoc(req.ClientIP),
 		AttachmentPrice: req.AttachmentPrice,
-		Visibility:      req.Visibility,
+		Visibility:      ms.PostVisibleT(req.Visibility.ToVisibleValue()),
 	}
 	post, err = s.Ds.CreatePost(post)
 	if err != nil {
@@ -286,8 +313,7 @@ func (s *privSrv) CreateTweet(req *web.CreateTweetReq) (_ *web.CreateTweetResp, 
 			}
 
 			// 创建消息提醒
-			// TODO: 优化消息提醒处理机制
-			go s.Ds.CreateMessage(&ms.Message{
+			onCreateMessageEvent(&ms.Message{
 				SenderUserID:   req.User.ID,
 				ReceiverUserID: user.ID,
 				Type:           ms.MsgTypePost,
@@ -303,6 +329,10 @@ func (s *privSrv) CreateTweet(req *web.CreateTweetReq) (_ *web.CreateTweetResp, 
 		logrus.Infof("Ds.RevampPosts err: %s", err)
 		return nil, web.ErrCreatePostFailed
 	}
+	// 缓存处理
+	// TODO: 缓存逻辑合并处理
+	onTrendsActionEvent(_trendsActionCreateTweet, req.User.ID)
+	onTweetActionEvent(_tweetActionCreate, req.User.ID, req.User.Username)
 	return (*web.CreateTweetResp)(formatedPosts[0]), nil
 }
 
@@ -331,6 +361,10 @@ func (s *privSrv) DeleteTweet(req *web.DeleteTweetReq) mir.Error {
 		logrus.Errorf("s.DeleteSearchPost failed: %s", err)
 		return web.ErrDeletePostFailed
 	}
+	// 缓存处理
+	// TODO: 缓存逻辑合并处理
+	onTrendsActionEvent(_trendsActionDeleteTweet, req.User.ID)
+	onTweetActionEvent(_tweetActionDelete, req.User.ID, req.User.Username)
 	return nil
 }
 
@@ -349,10 +383,14 @@ func (s *privSrv) DeleteCommentReply(req *web.DeleteCommentReplyReq) mir.Error {
 		logrus.Errorf("s.deletePostCommentReply err: %s", err)
 		return web.ErrDeleteCommentFailed
 	}
+	// 缓存处理， 宽松处理错误
+	if comment, err := s.Ds.GetCommentByID(reply.CommentID); err == nil {
+		onCommentActionEvent(comment.PostID, comment.ID, _commentActionReplyDelete)
+	}
 	return nil
 }
 
-func (s *privSrv) CreateCommentReply(req *web.CreateCommentReplyReq) (*web.CreateCommentReplyResp, mir.Error) {
+func (s *privSrv) CreateCommentReply(req *web.CreateCommentReplyReq) (_ *web.CreateCommentReplyResp, xerr mir.Error) {
 	var (
 		post     *ms.Post
 		comment  *ms.Comment
@@ -390,7 +428,7 @@ func (s *privSrv) CreateCommentReply(req *web.CreateCommentReplyReq) (*web.Creat
 	// 创建用户消息提醒
 	commentMaster, err := s.Ds.GetUserByID(comment.UserID)
 	if err == nil && commentMaster.ID != req.Uid {
-		go s.Ds.CreateMessage(&ms.Message{
+		onCreateMessageEvent(&ms.Message{
 			SenderUserID:   req.Uid,
 			ReceiverUserID: commentMaster.ID,
 			Type:           ms.MsgTypeReply,
@@ -402,7 +440,7 @@ func (s *privSrv) CreateCommentReply(req *web.CreateCommentReplyReq) (*web.Creat
 	}
 	postMaster, err := s.Ds.GetUserByID(post.UserID)
 	if err == nil && postMaster.ID != req.Uid && commentMaster.ID != postMaster.ID {
-		go s.Ds.CreateMessage(&ms.Message{
+		onCreateMessageEvent(&ms.Message{
 			SenderUserID:   req.Uid,
 			ReceiverUserID: postMaster.ID,
 			Type:           ms.MsgTypeReply,
@@ -416,7 +454,7 @@ func (s *privSrv) CreateCommentReply(req *web.CreateCommentReplyReq) (*web.Creat
 		user, err := s.Ds.GetUserByID(atUserID)
 		if err == nil && user.ID != req.Uid && commentMaster.ID != user.ID && postMaster.ID != user.ID {
 			// 创建消息提醒
-			go s.Ds.CreateMessage(&ms.Message{
+			onCreateMessageEvent(&ms.Message{
 				SenderUserID:   req.Uid,
 				ReceiverUserID: user.ID,
 				Type:           ms.MsgTypeReply,
@@ -427,6 +465,8 @@ func (s *privSrv) CreateCommentReply(req *web.CreateCommentReplyReq) (*web.Creat
 			})
 		}
 	}
+	// 缓存处理
+	onCommentActionEvent(comment.PostID, comment.ID, _commentActionReplyCreate)
 	return (*web.CreateCommentReplyResp)(reply), nil
 }
 
@@ -455,7 +495,24 @@ func (s *privSrv) DeleteComment(req *web.DeleteCommentReq) mir.Error {
 		logrus.Errorf("Ds.DeleteComment err: %s", err)
 		return web.ErrDeleteCommentFailed
 	}
+	onCommentActionEvent(comment.PostID, comment.ID, _commentActionDelete)
 	return nil
+}
+
+func (s *privSrv) HighlightComment(req *web.HighlightCommentReq) (*web.HighlightCommentResp, mir.Error) {
+	status, err := s.Ds.HighlightComment(req.Uid, req.CommentId)
+	if err == cs.ErrNoPermission {
+		return nil, web.ErrNoPermission
+	} else if err != nil {
+		return nil, web.ErrHighlightCommentFailed
+	}
+	// 缓存处理， 宽松处理错误
+	if comment, err := s.Ds.GetCommentByID(req.CommentId); err == nil {
+		onCommentActionEvent(comment.PostID, comment.ID, _commentActionHighlight)
+	}
+	return &web.HighlightCommentResp{
+		HighlightStatus: status,
+	}, nil
 }
 
 func (s *privSrv) CreateComment(req *web.CreateCommentReq) (_ *web.CreateCommentResp, xerr mir.Error) {
@@ -522,7 +579,7 @@ func (s *privSrv) CreateComment(req *web.CreateCommentReq) (_ *web.CreateComment
 	// 创建用户消息提醒
 	postMaster, err := s.Ds.GetUserByID(post.UserID)
 	if err == nil && postMaster.ID != req.Uid {
-		go s.Ds.CreateMessage(&ms.Message{
+		onCreateMessageEvent(&ms.Message{
 			SenderUserID:   req.Uid,
 			ReceiverUserID: postMaster.ID,
 			Type:           ms.MsgtypeComment,
@@ -538,7 +595,7 @@ func (s *privSrv) CreateComment(req *web.CreateCommentReq) (_ *web.CreateComment
 		}
 
 		// 创建消息提醒
-		go s.Ds.CreateMessage(&ms.Message{
+		onCreateMessageEvent(&ms.Message{
 			SenderUserID:   req.Uid,
 			ReceiverUserID: user.ID,
 			Type:           ms.MsgtypeComment,
@@ -547,7 +604,8 @@ func (s *privSrv) CreateComment(req *web.CreateCommentReq) (_ *web.CreateComment
 			CommentID:      comment.ID,
 		})
 	}
-
+	// 缓存处理
+	onCommentActionEvent(comment.PostID, comment.ID, _commentActionCreate)
 	return (*web.CreateCommentResp)(comment), nil
 }
 
@@ -592,7 +650,7 @@ func (s *privSrv) StarTweet(req *web.StarTweetReq) (*web.StarTweetResp, mir.Erro
 }
 
 func (s *privSrv) VisibleTweet(req *web.VisibleTweetReq) (*web.VisibleTweetResp, mir.Error) {
-	if req.Visibility >= core.PostVisitInvalid {
+	if req.Visibility >= web.TweetVisitInvalid {
 		return nil, xerror.InvalidParams
 	}
 	post, err := s.Ds.GetPostByID(req.ID)
@@ -602,13 +660,13 @@ func (s *privSrv) VisibleTweet(req *web.VisibleTweetReq) (*web.VisibleTweetResp,
 	if xerr := checkPermision(req.User, post.UserID); xerr != nil {
 		return nil, xerr
 	}
-	if err = s.Ds.VisiblePost(post, req.Visibility); err != nil {
+	if err = s.Ds.VisiblePost(post, req.Visibility.ToVisibleValue()); err != nil {
 		logrus.Warnf("s.Ds.VisiblePost: %s", err)
 		return nil, web.ErrVisblePostFailed
 	}
 
 	// 推送Search
-	post.Visibility = req.Visibility
+	post.Visibility = ms.PostVisibleT(req.Visibility.ToVisibleValue())
 	s.PushPostToSearch(post)
 
 	return &web.VisibleTweetResp{
@@ -846,4 +904,8 @@ func newPrivSrv(s *base.DaoServant, oss core.ObjectStorageService) api.Priv {
 		DaoServant: s,
 		oss:        oss,
 	}
+}
+
+func newPrivChain() api.PrivChain {
+	return &privChain{}
 }

@@ -76,7 +76,7 @@
                         :key="content.id"
                         class="post-text"
                         @click.stop="doClickText($event, post.id)"
-                        v-html="parsePostTag(content.content).content"
+                        v-html="preparePost(content.content, '展开', '收起', store.state.profile.tweetMobileEllipsisSize, inFoldStyle)"
                     ></span>
                 </div>
             </template>
@@ -127,14 +127,14 @@
 </template>
 
 <script setup lang="ts">
-import { h, computed } from 'vue';
+import { h, ref, computed } from 'vue';
 import type { Component } from 'vue'
 import { NIcon } from 'naive-ui'
 import { useStore } from 'vuex';
 import type { DropdownOption } from 'naive-ui';
 import { useRouter } from 'vue-router';
 import { formatPrettyDate } from '@/utils/formatTime';
-import { parsePostTag } from '@/utils/content';
+import { preparePost } from '@/utils/content';
 import {
     postStar,
     postCollection,
@@ -145,18 +145,28 @@ import {
     BookmarkOutline,
     ChatboxOutline,
     ShareSocialOutline,
+    PersonAddOutline,
+    PersonRemoveOutline,
+    BodyOutline,
+    WalkOutline,
 } from '@vicons/ionicons5';
 import { MoreHorizFilled } from '@vicons/material';
 import copy from "copy-to-clipboard";
 
 const router = useRouter();
 const store = useStore();
+const inFoldStyle = ref<boolean>(true)
 const props = withDefaults(defineProps<{
     post: Item.PostProps,
+    isOwner: boolean,
+    addFriendAction: boolean,
+    addFollowAction: boolean,
 }>(), {});
 
 const emit = defineEmits<{
-    (e: 'send-whisper', user: Item.UserInfo): void;
+    (e: 'send-whisper', user: Item.UserInfo): void
+    (e: 'handle-follow-action', user: Item.PostProps): void
+    (e: 'handle-friend-action', user: Item.PostProps): void
 }>();
 
 const renderIcon = (icon: Component) => {
@@ -169,19 +179,43 @@ const renderIcon = (icon: Component) => {
 
 const tweetOptions = computed(() => {
     let options: DropdownOption[] = [];
-    // TODO: f*k 为什么这里会卡？
-    // if (store.state.userinfo.id > 0) {
-    //     options.push({
-    //         label: '私信',
-    //         key: 'whisper',
-    //         icon: renderIcon(PaperPlaneOutline)
-    //     });
-    // }
-    options.push({
-        label: '私信',
-        key: 'whisper',
-        icon: renderIcon(PaperPlaneOutline)
-    });
+    if (!props.isOwner) {
+        options.push({
+            label: '私信 @' + props.post.user.username,
+            key: 'whisper',
+            icon: renderIcon(PaperPlaneOutline)
+        });
+    }
+    if (!props.isOwner && props.addFollowAction) {
+        if (props.post.user.is_following) {
+            options.push({
+                label: '取消关注 @' + props.post.user.username,
+                key: 'unfollow',
+                icon: renderIcon(WalkOutline)
+            })
+        } else {
+            options.push({
+                label: '关注 @' + props.post.user.username,
+                key: 'follow',
+                icon: renderIcon(BodyOutline)
+            })
+        }
+    }
+    if (!props.isOwner && props.addFriendAction) {
+        if (props.post.user.is_friend) {
+            options.push({
+                label: '删除好友 @' + props.post.user.username,
+                key: 'delete',
+                icon: renderIcon(PersonRemoveOutline)
+            });
+        } else {
+            options.push({
+                label: '添加朋友 @' + props.post.user.username,
+                key: 'requesting',
+                icon: renderIcon(PersonAddOutline)
+            });
+        }
+    }
     options.push({
         label: '复制链接',
         key: 'copyTweetLink',
@@ -191,7 +225,7 @@ const tweetOptions = computed(() => {
 });
 
 const handleTweetAction = async (
-    item: 'copyTweetLink' | 'whisper'
+    item: 'copyTweetLink' | 'whisper' | 'follow' | 'unfollow' | 'delete' | 'requesting'
 ) => {
     switch (item) {
         case 'copyTweetLink':
@@ -200,6 +234,14 @@ const handleTweetAction = async (
             break;
         case 'whisper':
             emit('send-whisper', props.post.user);
+            break;
+        case 'delete':
+        case 'requesting':
+            emit('handle-friend-action', props.post);
+            break;
+        case 'follow':
+        case 'unfollow':
+            emit('handle-follow-action', props.post);
             break;
         default:
             break;
@@ -300,8 +342,9 @@ const goPostDetail = (id: number) => {
     });
 };
 const doClickText = (e: MouseEvent, id: number) => {
-    if ((e.target as any).dataset.detail) {
-        const d = (e.target as any).dataset.detail.split(':');
+    const detail = (e.target as any).dataset.detail
+    if (detail && detail !== 'post') {
+        const d = detail.split(':');
         if (d.length === 2) {
             store.commit('refresh');
             if (d[0] === 'tag') {
@@ -320,10 +363,12 @@ const doClickText = (e: MouseEvent, id: number) => {
                     },
                 });
             }
-            return;
         }
+    } else if (detail && detail === 'post') {
+        inFoldStyle.value = !inFoldStyle.value
+    } else {
+        goPostDetail(id);
     }
-    goPostDetail(id);
 };
 </script>
 

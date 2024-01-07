@@ -7,11 +7,13 @@ package web
 import (
 	"github.com/alimy/mir/v4"
 	"github.com/gin-gonic/gin"
+	"github.com/redis/rueidis"
 	api "github.com/rocboss/paopao-ce/auto/api/v1"
+	"github.com/rocboss/paopao-ce/internal/core"
 	"github.com/rocboss/paopao-ce/internal/model/web"
 	"github.com/rocboss/paopao-ce/internal/servants/base"
 	"github.com/rocboss/paopao-ce/internal/servants/chain"
-	"github.com/rocboss/paopao-ce/pkg/xerror"
+	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -21,6 +23,15 @@ var (
 type relaxSrv struct {
 	api.UnimplementedRelaxServant
 	*base.DaoServant
+	wc core.WebCache
+}
+
+type relaxChain struct {
+	api.UnimplementedRelaxChain
+}
+
+func (s *relaxChain) ChainGetUnreadMsgCount() gin.HandlersChain {
+	return gin.HandlersChain{chain.OnlineUserMeasure()}
 }
 
 func (s *relaxSrv) Chain() gin.HandlersChain {
@@ -28,17 +39,26 @@ func (s *relaxSrv) Chain() gin.HandlersChain {
 }
 
 func (s *relaxSrv) GetUnreadMsgCount(req *web.GetUnreadMsgCountReq) (*web.GetUnreadMsgCountResp, mir.Error) {
-	count, err := s.Ds.GetUnreadCount(req.Uid)
-	if err != nil {
-		return nil, xerror.ServerError
+	if data, xerr := s.wc.GetUnreadMsgCountResp(req.Uid); xerr == nil && len(data) > 0 {
+		// logrus.Debugln("GetUnreadMsgCount get resp from cache")
+		return &web.GetUnreadMsgCountResp{
+			JsonResp: data,
+		}, nil
+	} else if !rueidis.IsRedisNil(xerr) {
+		logrus.Warnf("GetUnreadMsgCount from cache occurs error: %s", xerr)
 	}
-	return &web.GetUnreadMsgCountResp{
-		Count: count,
-	}, nil
+	// 使用缓存机制特殊处理
+	onCacheUnreadMsgEvent(req.Uid)
+	return &web.GetUnreadMsgCountResp{}, nil
 }
 
-func newRelaxSrv(s *base.DaoServant) api.Relax {
+func newRelaxSrv(s *base.DaoServant, wc core.WebCache) api.Relax {
 	return &relaxSrv{
 		DaoServant: s,
+		wc:         wc,
 	}
+}
+
+func newRelaxChain() api.RelaxChain {
+	return &relaxChain{}
 }
