@@ -42,16 +42,16 @@ OtlpTraceGrpc:
   Endpoint: localhost:5081
   Headers: 
     Authorization: "Basic cm9vdEBwYW9wYW8uaW5mbzpQYnBqY3hPTnJxQzR4RWFi"
-    Organization: default
-    StreamName: paopao-ce-trace
+    organization: default
+    stream-name: paopao-ce-trace
   TLS:
     Insecure: true
 OtlpMetricGrpc: 
   Endpoint: localhost:5081
   Headers: 
     Authorization: "Basic cm9vdEBwYW9wYW8uaW5mbzpQYnBqY3hPTnJxQzR4RWFi"
-    Organization: default
-    StreamName: paopao-ce-metric
+    organization: default
+    stream-name: paopao-ce-metric
   TLS:
     Insecure: true
 WebServer: # Web服务
