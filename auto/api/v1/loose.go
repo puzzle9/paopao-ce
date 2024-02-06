@@ -18,12 +18,12 @@ type Loose interface {
 	// Chain provide handlers chain for gin
 	Chain() gin.HandlersChain
 
-	TweetDetail(*web.TweetDetailReq) (*web.TweetDetailResp, mir.Error)
-	TweetComments(*web.TweetCommentsReq) (*web.TweetCommentsResp, mir.Error)
-	TopicList(*web.TopicListReq) (*web.TopicListResp, mir.Error)
-	GetUserProfile(*web.GetUserProfileReq) (*web.GetUserProfileResp, mir.Error)
-	GetUserTweets(*web.GetUserTweetsReq) (*web.GetUserTweetsResp, mir.Error)
-	Timeline(*web.TimelineReq) (*web.TimelineResp, mir.Error)
+	TweetDetail(*gin.Context, *web.TweetDetailReq) (*web.TweetDetailResp, mir.Error)
+	TweetComments(*gin.Context, *web.TweetCommentsReq) (*web.TweetCommentsResp, mir.Error)
+	TopicList(*gin.Context, *web.TopicListReq) (*web.TopicListResp, mir.Error)
+	GetUserProfile(*gin.Context, *web.GetUserProfileReq) (*web.GetUserProfileResp, mir.Error)
+	GetUserTweets(*gin.Context, *web.GetUserTweetsReq) (*web.GetUserTweetsResp, mir.Error)
+	Timeline(*gin.Context, *web.TimelineReq) (*web.TimelineResp, mir.Error)
 
 	mustEmbedUnimplementedLooseServant()
 }
@@ -47,7 +47,7 @@ func RegisterLooseServant(e *gin.Engine, s Loose) {
 			s.Render(c, nil, err)
 			return
 		}
-		resp, err := s.TweetDetail(req)
+		resp, err := s.TweetDetail(c, req)
 		s.Render(c, resp, err)
 	})
 	router.Handle("GET", "/post/comments", func(c *gin.Context) {
@@ -61,7 +61,7 @@ func RegisterLooseServant(e *gin.Engine, s Loose) {
 			s.Render(c, nil, err)
 			return
 		}
-		resp, err := s.TweetComments(req)
+		resp, err := s.TweetComments(c, req)
 		if err != nil {
 			s.Render(c, nil, err)
 			return
@@ -80,7 +80,7 @@ func RegisterLooseServant(e *gin.Engine, s Loose) {
 			s.Render(c, nil, err)
 			return
 		}
-		resp, err := s.TopicList(req)
+		resp, err := s.TopicList(c, req)
 		s.Render(c, resp, err)
 	})
 	router.Handle("GET", "/user/profile", func(c *gin.Context) {
@@ -94,7 +94,7 @@ func RegisterLooseServant(e *gin.Engine, s Loose) {
 			s.Render(c, nil, err)
 			return
 		}
-		resp, err := s.GetUserProfile(req)
+		resp, err := s.GetUserProfile(c, req)
 		s.Render(c, resp, err)
 	})
 	router.Handle("GET", "/user/posts", func(c *gin.Context) {
@@ -108,7 +108,7 @@ func RegisterLooseServant(e *gin.Engine, s Loose) {
 			s.Render(c, nil, err)
 			return
 		}
-		resp, err := s.GetUserTweets(req)
+		resp, err := s.GetUserTweets(c, req)
 		if err != nil {
 			s.Render(c, nil, err)
 			return
@@ -128,7 +128,7 @@ func RegisterLooseServant(e *gin.Engine, s Loose) {
 			s.Render(c, nil, err)
 			return
 		}
-		resp, err := s.Timeline(req)
+		resp, err := s.Timeline(c, req)
 		if err != nil {
 			s.Render(c, nil, err)
 			return
@@ -145,27 +145,27 @@ func (UnimplementedLooseServant) Chain() gin.HandlersChain {
 	return nil
 }
 
-func (UnimplementedLooseServant) TweetDetail(req *web.TweetDetailReq) (*web.TweetDetailResp, mir.Error) {
+func (UnimplementedLooseServant) TweetDetail(c *gin.Context, req *web.TweetDetailReq) (*web.TweetDetailResp, mir.Error) {
 	return nil, mir.Errorln(http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 
-func (UnimplementedLooseServant) TweetComments(req *web.TweetCommentsReq) (*web.TweetCommentsResp, mir.Error) {
+func (UnimplementedLooseServant) TweetComments(c *gin.Context, req *web.TweetCommentsReq) (*web.TweetCommentsResp, mir.Error) {
 	return nil, mir.Errorln(http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 
-func (UnimplementedLooseServant) TopicList(req *web.TopicListReq) (*web.TopicListResp, mir.Error) {
+func (UnimplementedLooseServant) TopicList(c *gin.Context, req *web.TopicListReq) (*web.TopicListResp, mir.Error) {
 	return nil, mir.Errorln(http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 
-func (UnimplementedLooseServant) GetUserProfile(req *web.GetUserProfileReq) (*web.GetUserProfileResp, mir.Error) {
+func (UnimplementedLooseServant) GetUserProfile(c *gin.Context, req *web.GetUserProfileReq) (*web.GetUserProfileResp, mir.Error) {
 	return nil, mir.Errorln(http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 
-func (UnimplementedLooseServant) GetUserTweets(req *web.GetUserTweetsReq) (*web.GetUserTweetsResp, mir.Error) {
+func (UnimplementedLooseServant) GetUserTweets(c *gin.Context, req *web.GetUserTweetsReq) (*web.GetUserTweetsResp, mir.Error) {
 	return nil, mir.Errorln(http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 
-func (UnimplementedLooseServant) Timeline(req *web.TimelineReq) (*web.TimelineResp, mir.Error) {
+func (UnimplementedLooseServant) Timeline(c *gin.Context, req *web.TimelineReq) (*web.TimelineResp, mir.Error) {
 	return nil, mir.Errorln(http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 

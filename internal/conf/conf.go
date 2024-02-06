@@ -19,6 +19,8 @@ var (
 	loggerOpenObserveSetting *loggerOpenObserveConf
 	sentrySetting            *sentryConf
 	redisSetting             *redisConf
+	otlpTraceGrpcSetting     *otlpGrpcConf
+	otlpMetricGrpcSetting    *otlpGrpcConf
 
 	PyroscopeSetting        *pyroscopeConf
 	DatabaseSetting         *databaseConf
@@ -96,6 +98,8 @@ func setupSetting(suite []string, noDefault bool) error {
 		"Alipay":            &AlipaySetting,
 		"SmsJuhe":           &SmsJuheSetting,
 		"Pyroscope":         &PyroscopeSetting,
+		"OtlpTraceGrpc":     &otlpTraceGrpcSetting,
+		"OtlpMetricGrpc":    &otlpMetricGrpcSetting,
 		"Sentry":            &sentrySetting,
 		"Logger":            &loggerSetting,
 		"LoggerFile":        &loggerFileSetting,
@@ -183,4 +187,8 @@ func RunMode() string {
 
 func UseSentryGin() bool {
 	return cfg.If("Sentry") && sentrySetting.AttachGin
+}
+
+func UseOpenTelemetry() bool {
+	return cfg.If("OpenTelemetry")
 }

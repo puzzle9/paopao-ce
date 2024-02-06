@@ -74,6 +74,15 @@ func serveRun(_cmd *cobra.Command, _args []string) {
 	// start pyroscope if need
 	debug.StartPyroscope()
 
+	// initialize opentelemetry if needed
+	if conf.UseOpenTelemetry() {
+		shutdown, err := conf.InitTelemetry()
+		if err != nil {
+			log.Fatalf("init opentelemetry failed: %s", err)
+		}
+		defer shutdown()
+	}
+
 	// start services
 	wg := conc.NewWaitGroup()
 	fmt.Fprintf(color.Output, "\nstarting run service...\n\n")

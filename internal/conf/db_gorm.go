@@ -10,6 +10,7 @@ import (
 
 	"github.com/alimy/tryst/cfg"
 	"github.com/sirupsen/logrus"
+	"github.com/uptrace/opentelemetry-go-extra/otelgorm"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -33,7 +34,7 @@ func MustGormDB() *gorm.DB {
 	return _gormdb
 }
 
-func newGormDB() (*gorm.DB, error) {
+func newGormDB() (db *gorm.DB, err error) {
 	newLogger := logger.New(
 		logrus.StandardLogger(), // io writer（日志输出的目标，前缀和日志包含的内容）
 		logger.Config{
@@ -52,21 +53,19 @@ func newGormDB() (*gorm.DB, error) {
 		},
 	}
 
-	plugin := dbresolver.Register(dbresolver.Config{}).
+	plugins := []gorm.Plugin{dbresolver.Register(dbresolver.Config{}).
 		SetConnMaxIdleTime(time.Hour).
 		SetConnMaxLifetime(24 * time.Hour).
 		SetMaxIdleConns(MysqlSetting.MaxIdleConns).
-		SetMaxOpenConns(MysqlSetting.MaxOpenConns)
+		SetMaxOpenConns(MysqlSetting.MaxOpenConns),
+	}
+	if UseOpenTelemetry() {
+		plugins = append(plugins, otelgorm.NewPlugin())
+	}
 
-	var (
-		db  *gorm.DB
-		err error
-	)
 	if cfg.If("MySQL") {
 		logrus.Debugln("use MySQL as db")
-		if db, err = gorm.Open(mysql.Open(MysqlSetting.Dsn()), config); err == nil {
-			db.Use(plugin)
-		}
+		db, err = gorm.Open(mysql.Open(MysqlSetting.Dsn()), config)
 	} else if cfg.If("Postgres") {
 		logrus.Debugln("use PostgreSQL as db")
 		db, err = gorm.Open(postgres.Open(PostgresSetting.Dsn()), config)
@@ -75,10 +74,14 @@ func newGormDB() (*gorm.DB, error) {
 		db, err = gormOpenSqlite3(config)
 	} else {
 		logrus.Debugln("use default of MySQL as db")
-		if db, err = gorm.Open(mysql.Open(MysqlSetting.Dsn()), config); err == nil {
-			db.Use(plugin)
+		db, err = gorm.Open(mysql.Open(MysqlSetting.Dsn()), config)
+	}
+	if err == nil {
+		for _, plugin := range plugins {
+			if err = db.Use(plugin); err != nil {
+				break
+			}
 		}
 	}
-
-	return db, err
+	return
 }

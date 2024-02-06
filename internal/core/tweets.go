@@ -5,6 +5,8 @@
 package core
 
 import (
+	"context"
+
 	"github.com/rocboss/paopao-ce/internal/core/cs"
 	"github.com/rocboss/paopao-ce/internal/core/ms"
 )
@@ -27,9 +29,9 @@ type TweetService interface {
 	ListUserMediaTweets(user *cs.VistUser, limit int, offset int) ([]*ms.Post, int64, error)
 	ListUserCommentTweets(user *cs.VistUser, limit int, offset int) ([]*ms.Post, int64, error)
 	ListUserTweets(userId int64, style uint8, justEssence bool, limit, offset int) ([]*ms.Post, int64, error)
-	ListFollowingTweets(userId int64, limit, offset int) ([]*ms.Post, int64, error)
-	ListIndexNewestTweets(limit, offset int) ([]*ms.Post, int64, error)
-	ListIndexHotsTweets(limit, offset int) ([]*ms.Post, int64, error)
+	ListFollowingTweets(c context.Context, userId int64, limit, offset int) ([]*ms.Post, int64, error)
+	ListIndexNewestTweets(c context.Context, limit, offset int) ([]*ms.Post, int64, error)
+	ListIndexHotsTweets(c context.Context, limit, offset int) ([]*ms.Post, int64, error)
 	ListSyncSearchTweets(limit, offset int) ([]*ms.Post, int64, error)
 }
 

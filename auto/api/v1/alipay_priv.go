@@ -18,9 +18,9 @@ type AlipayPriv interface {
 	// Chain provide handlers chain for gin
 	Chain() gin.HandlersChain
 
-	UserWalletBills(*web.UserWalletBillsReq) (*web.UserWalletBillsResp, mir.Error)
-	UserRechargeResult(*web.UserRechargeResultReq) (*web.UserRechargeResultResp, mir.Error)
-	UserRechargeLink(*web.UserRechargeLinkReq) (*web.UserRechargeLinkResp, mir.Error)
+	UserWalletBills(*gin.Context, *web.UserWalletBillsReq) (*web.UserWalletBillsResp, mir.Error)
+	UserRechargeResult(*gin.Context, *web.UserRechargeResultReq) (*web.UserRechargeResultResp, mir.Error)
+	UserRechargeLink(*gin.Context, *web.UserRechargeLinkReq) (*web.UserRechargeLinkResp, mir.Error)
 
 	mustEmbedUnimplementedAlipayPrivServant()
 }
@@ -45,7 +45,7 @@ func RegisterAlipayPrivServant(e *gin.Engine, s AlipayPriv) {
 			s.Render(c, nil, err)
 			return
 		}
-		resp, err := s.UserWalletBills(req)
+		resp, err := s.UserWalletBills(c, req)
 		s.Render(c, resp, err)
 	})
 	router.Handle("GET", "/user/recharge", func(c *gin.Context) {
@@ -60,7 +60,7 @@ func RegisterAlipayPrivServant(e *gin.Engine, s AlipayPriv) {
 			s.Render(c, nil, err)
 			return
 		}
-		resp, err := s.UserRechargeResult(req)
+		resp, err := s.UserRechargeResult(c, req)
 		s.Render(c, resp, err)
 	})
 	router.Handle("POST", "/user/recharge", func(c *gin.Context) {
@@ -75,7 +75,7 @@ func RegisterAlipayPrivServant(e *gin.Engine, s AlipayPriv) {
 			s.Render(c, nil, err)
 			return
 		}
-		resp, err := s.UserRechargeLink(req)
+		resp, err := s.UserRechargeLink(c, req)
 		s.Render(c, resp, err)
 	})
 }
@@ -87,15 +87,15 @@ func (UnimplementedAlipayPrivServant) Chain() gin.HandlersChain {
 	return nil
 }
 
-func (UnimplementedAlipayPrivServant) UserWalletBills(req *web.UserWalletBillsReq) (*web.UserWalletBillsResp, mir.Error) {
+func (UnimplementedAlipayPrivServant) UserWalletBills(c *gin.Context, req *web.UserWalletBillsReq) (*web.UserWalletBillsResp, mir.Error) {
 	return nil, mir.Errorln(http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 
-func (UnimplementedAlipayPrivServant) UserRechargeResult(req *web.UserRechargeResultReq) (*web.UserRechargeResultResp, mir.Error) {
+func (UnimplementedAlipayPrivServant) UserRechargeResult(c *gin.Context, req *web.UserRechargeResultReq) (*web.UserRechargeResultResp, mir.Error) {
 	return nil, mir.Errorln(http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 
-func (UnimplementedAlipayPrivServant) UserRechargeLink(req *web.UserRechargeLinkReq) (*web.UserRechargeLinkResp, mir.Error) {
+func (UnimplementedAlipayPrivServant) UserRechargeLink(c *gin.Context, req *web.UserRechargeLinkReq) (*web.UserRechargeLinkResp, mir.Error) {
 	return nil, mir.Errorln(http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 

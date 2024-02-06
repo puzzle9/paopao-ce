@@ -28,7 +28,7 @@ func (s *friendshipSrv) Chain() gin.HandlersChain {
 	return gin.HandlersChain{chain.JWT()}
 }
 
-func (s *friendshipSrv) GetContacts(req *web.GetContactsReq) (*web.GetContactsResp, mir.Error) {
+func (s *friendshipSrv) GetContacts(c *gin.Context, req *web.GetContactsReq) (*web.GetContactsResp, mir.Error) {
 	if req.User == nil {
 		return nil, xerror.ServerError
 	}
@@ -41,14 +41,14 @@ func (s *friendshipSrv) GetContacts(req *web.GetContactsReq) (*web.GetContactsRe
 	return (*web.GetContactsResp)(resp), nil
 }
 
-func (s *friendshipSrv) DeleteFriend(req *web.DeleteFriendReq) mir.Error {
+func (s *friendshipSrv) DeleteFriend(c *gin.Context, req *web.DeleteFriendReq) mir.Error {
 	if req.User == nil {
 		return xerror.ServerError
 	}
 	if req.User != nil && req.User.ID == req.UserId {
 		return web.ErrNoActionToSelf
 	}
-	if _, err := s.Ds.GetUserByID(req.UserId); err != nil {
+	if _, err := s.Ds.GetUserByID(c.Request.Context(), req.UserId); err != nil {
 		return web.ErrNotExistFriendId
 	}
 	if err := s.Ds.DeleteFriend(req.User.ID, req.UserId); err != nil {
@@ -61,14 +61,14 @@ func (s *friendshipSrv) DeleteFriend(req *web.DeleteFriendReq) mir.Error {
 	return nil
 }
 
-func (s *friendshipSrv) RejectFriend(req *web.RejectFriendReq) mir.Error {
+func (s *friendshipSrv) RejectFriend(c *gin.Context, req *web.RejectFriendReq) mir.Error {
 	if req.User == nil {
 		return xerror.ServerError
 	}
 	if req.User.ID == req.UserId {
 		return web.ErrNoActionToSelf
 	}
-	if _, err := s.Ds.GetUserByID(req.UserId); err != nil {
+	if _, err := s.Ds.GetUserByID(c.Request.Context(), req.UserId); err != nil {
 		return web.ErrNotExistFriendId
 	}
 	if err := s.Ds.RejectFriend(req.User.ID, req.UserId); err != nil {
@@ -78,14 +78,14 @@ func (s *friendshipSrv) RejectFriend(req *web.RejectFriendReq) mir.Error {
 	return nil
 }
 
-func (s *friendshipSrv) AddFriend(req *web.AddFriendReq) mir.Error {
+func (s *friendshipSrv) AddFriend(c *gin.Context, req *web.AddFriendReq) mir.Error {
 	if req.User == nil {
 		return xerror.ServerError
 	}
 	if req.User.ID == req.UserId {
 		return web.ErrNoActionToSelf
 	}
-	if _, err := s.Ds.GetUserByID(req.UserId); err != nil {
+	if _, err := s.Ds.GetUserByID(c.Request.Context(), req.UserId); err != nil {
 		return web.ErrNotExistFriendId
 	}
 	if err := s.Ds.AddFriend(req.User.ID, req.UserId); err != nil {
@@ -98,14 +98,14 @@ func (s *friendshipSrv) AddFriend(req *web.AddFriendReq) mir.Error {
 	return nil
 }
 
-func (s *friendshipSrv) RequestingFriend(req *web.RequestingFriendReq) mir.Error {
+func (s *friendshipSrv) RequestingFriend(c *gin.Context, req *web.RequestingFriendReq) mir.Error {
 	if req.User == nil {
 		return xerror.ServerError
 	}
 	if req.User.ID == req.UserId {
 		return web.ErrNoRequestingFriendToSelf
 	}
-	if _, err := s.Ds.GetUserByID(req.UserId); err != nil {
+	if _, err := s.Ds.GetUserByID(c.Request.Context(), req.UserId); err != nil {
 		return web.ErrNotExistFriendId
 	}
 	if err := s.Ds.RequestingFriend(req.User.ID, req.UserId, req.Greetings); err != nil {

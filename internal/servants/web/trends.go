@@ -35,7 +35,7 @@ func (s *trendsSrv) Chain() gin.HandlersChain {
 	return gin.HandlersChain{chain.JWT()}
 }
 
-func (s *trendsSrv) GetIndexTrends(req *web.GetIndexTrendsReq) (res *web.GetIndexTrendsResp, _ mir.Error) {
+func (s *trendsSrv) GetIndexTrends(c *gin.Context, req *web.GetIndexTrendsReq) (res *web.GetIndexTrendsResp, _ mir.Error) {
 	limit, offset := req.PageSize, (req.Page-1)*req.PageSize
 	// 尝试直接从缓存中获取数据
 	key, ok := "", false

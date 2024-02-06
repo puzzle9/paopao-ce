@@ -5,13 +5,15 @@
 package core
 
 import (
+	"context"
+
 	"github.com/rocboss/paopao-ce/internal/core/cs"
 	"github.com/rocboss/paopao-ce/internal/core/ms"
 )
 
 // UserManageService 用户管理服务
 type UserManageService interface {
-	GetUserByID(id int64) (*ms.User, error)
+	GetUserByID(c context.Context, id int64) (*ms.User, error)
 	GetUserByUsername(username string) (*ms.User, error)
 	GetUserByPhone(phone string) (*ms.User, error)
 	GetUsersByIDs(ids []int64) ([]*ms.User, error)

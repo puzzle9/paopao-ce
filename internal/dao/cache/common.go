@@ -6,6 +6,7 @@ package cache
 
 import (
 	"bytes"
+	"context"
 	"encoding/gob"
 
 	"github.com/RoaringBitmap/roaring/roaring64"
@@ -28,7 +29,7 @@ func NewCacheDataService(ds core.DataService) core.DataService {
 	}
 }
 
-func (s *cacheDataService) GetUserByID(id int64) (res *ms.User, err error) {
+func (s *cacheDataService) GetUserByID(c context.Context, id int64) (res *ms.User, err error) {
 	// 先从缓存获取， 不处理错误
 	key := conf.KeyUserInfoById.Get(id)
 	if data, xerr := s.ac.Get(key); xerr == nil {
@@ -38,7 +39,7 @@ func (s *cacheDataService) GetUserByID(id int64) (res *ms.User, err error) {
 		return
 	}
 	// 最后查库
-	if res, err = s.DataService.GetUserByID(id); err == nil {
+	if res, err = s.DataService.GetUserByID(c, id); err == nil {
 		// 更新缓存
 		onCacheUserInfoEvent(key, res)
 	}

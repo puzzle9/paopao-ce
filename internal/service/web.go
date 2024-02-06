@@ -15,6 +15,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/rocboss/paopao-ce/internal/conf"
 	"github.com/rocboss/paopao-ce/internal/servants"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 )
 
 var (
@@ -83,6 +84,9 @@ func newWebService() Service {
 	addr := conf.WebServerSetting.HttpIp + ":" + conf.WebServerSetting.HttpPort
 	server := httpServers.from(addr, func() *httpServer {
 		engine := newWebEngine()
+		if conf.UseOpenTelemetry() {
+			engine.Use(otelgin.Middleware("WebService"))
+		}
 		return &httpServer{
 			baseServer: newBaseServe(),
 			e:          engine,

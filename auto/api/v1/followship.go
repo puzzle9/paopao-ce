@@ -18,10 +18,10 @@ type Followship interface {
 	// Chain provide handlers chain for gin
 	Chain() gin.HandlersChain
 
-	ListFollowings(*web.ListFollowingsReq) (*web.ListFollowingsResp, mir.Error)
-	ListFollows(*web.ListFollowsReq) (*web.ListFollowsResp, mir.Error)
-	UnfollowUser(*web.UnfollowUserReq) mir.Error
-	FollowUser(*web.FollowUserReq) mir.Error
+	ListFollowings(*gin.Context, *web.ListFollowingsReq) (*web.ListFollowingsResp, mir.Error)
+	ListFollows(*gin.Context, *web.ListFollowsReq) (*web.ListFollowsResp, mir.Error)
+	UnfollowUser(*gin.Context, *web.UnfollowUserReq) mir.Error
+	FollowUser(*gin.Context, *web.FollowUserReq) mir.Error
 
 	mustEmbedUnimplementedFollowshipServant()
 }
@@ -45,7 +45,7 @@ func RegisterFollowshipServant(e *gin.Engine, s Followship) {
 			s.Render(c, nil, err)
 			return
 		}
-		resp, err := s.ListFollowings(req)
+		resp, err := s.ListFollowings(c, req)
 		s.Render(c, resp, err)
 	})
 	router.Handle("GET", "/user/follows", func(c *gin.Context) {
@@ -59,7 +59,7 @@ func RegisterFollowshipServant(e *gin.Engine, s Followship) {
 			s.Render(c, nil, err)
 			return
 		}
-		resp, err := s.ListFollows(req)
+		resp, err := s.ListFollows(c, req)
 		s.Render(c, resp, err)
 	})
 	router.Handle("POST", "/user/unfollow", func(c *gin.Context) {
@@ -73,7 +73,7 @@ func RegisterFollowshipServant(e *gin.Engine, s Followship) {
 			s.Render(c, nil, err)
 			return
 		}
-		s.Render(c, nil, s.UnfollowUser(req))
+		s.Render(c, nil, s.UnfollowUser(c, req))
 	})
 	router.Handle("POST", "/user/follow", func(c *gin.Context) {
 		select {
@@ -86,7 +86,7 @@ func RegisterFollowshipServant(e *gin.Engine, s Followship) {
 			s.Render(c, nil, err)
 			return
 		}
-		s.Render(c, nil, s.FollowUser(req))
+		s.Render(c, nil, s.FollowUser(c, req))
 	})
 }
 
@@ -97,19 +97,19 @@ func (UnimplementedFollowshipServant) Chain() gin.HandlersChain {
 	return nil
 }
 
-func (UnimplementedFollowshipServant) ListFollowings(req *web.ListFollowingsReq) (*web.ListFollowingsResp, mir.Error) {
+func (UnimplementedFollowshipServant) ListFollowings(c *gin.Context, req *web.ListFollowingsReq) (*web.ListFollowingsResp, mir.Error) {
 	return nil, mir.Errorln(http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 
-func (UnimplementedFollowshipServant) ListFollows(req *web.ListFollowsReq) (*web.ListFollowsResp, mir.Error) {
+func (UnimplementedFollowshipServant) ListFollows(c *gin.Context, req *web.ListFollowsReq) (*web.ListFollowsResp, mir.Error) {
 	return nil, mir.Errorln(http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 
-func (UnimplementedFollowshipServant) UnfollowUser(req *web.UnfollowUserReq) mir.Error {
+func (UnimplementedFollowshipServant) UnfollowUser(c *gin.Context, req *web.UnfollowUserReq) mir.Error {
 	return mir.Errorln(http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 
-func (UnimplementedFollowshipServant) FollowUser(req *web.FollowUserReq) mir.Error {
+func (UnimplementedFollowshipServant) FollowUser(c *gin.Context, req *web.FollowUserReq) mir.Error {
 	return mir.Errorln(http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 

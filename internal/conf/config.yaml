@@ -37,6 +37,23 @@ JobManager: # Cron Job理器的配置参数
   UpdateMetricsInterval: "@every 5m"   # 更新Prometheus指标，默认每5分钟更新一次
 Features:
   Default: []
+  OpenTelemetry: [OtlpTraceGrpc, OtlpMetricGrpc]
+OtlpTraceGrpc: 
+  Endpoint: localhost:5081
+  Headers: 
+    Authorization: "Basic cm9vdEBwYW9wYW8uaW5mbzpQYnBqY3hPTnJxQzR4RWFi"
+    Organization: default
+    StreamName: paopao-ce-trace
+  TLS:
+    Insecure: true
+OtlpMetricGrpc: 
+  Endpoint: localhost:5081
+  Headers: 
+    Authorization: "Basic cm9vdEBwYW9wYW8uaW5mbzpQYnBqY3hPTnJxQzR4RWFi"
+    Organization: default
+    StreamName: paopao-ce-metric
+  TLS:
+    Insecure: true
 WebServer: # Web服务
   RunMode: debug
   HttpIp: 0.0.0.0

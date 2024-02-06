@@ -20,6 +20,14 @@ import (
 //go:embed config.yaml
 var configBytes []byte
 
+type otlpGrpcConf struct {
+	Endpoint string
+	Headers  map[string]string
+	TLS      struct {
+		Insecure bool
+	}
+}
+
 type pyroscopeConf struct {
 	AppName   string
 	Endpoint  string

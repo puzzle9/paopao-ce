@@ -15,7 +15,7 @@ import (
 type AlipayPub interface {
 	_default_
 
-	AlipayNotify(*web.AlipayNotifyReq) mir.Error
+	AlipayNotify(*gin.Context, *web.AlipayNotifyReq) mir.Error
 
 	mustEmbedUnimplementedAlipayPubServant()
 }
@@ -37,14 +37,14 @@ func RegisterAlipayPubServant(e *gin.Engine, s AlipayPub) {
 			s.Render(c, nil, err)
 			return
 		}
-		s.Render(c, nil, s.AlipayNotify(req))
+		s.Render(c, nil, s.AlipayNotify(c, req))
 	})
 }
 
 // UnimplementedAlipayPubServant can be embedded to have forward compatible implementations.
 type UnimplementedAlipayPubServant struct{}
 
-func (UnimplementedAlipayPubServant) AlipayNotify(req *web.AlipayNotifyReq) mir.Error {
+func (UnimplementedAlipayPubServant) AlipayNotify(c *gin.Context, req *web.AlipayNotifyReq) mir.Error {
 	return mir.Errorln(http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 

@@ -29,7 +29,7 @@ func (s *followshipSrv) Chain() gin.HandlersChain {
 	return gin.HandlersChain{chain.JwtLoose()}
 }
 
-func (s *followshipSrv) ListFollowings(r *web.ListFollowingsReq) (*web.ListFollowingsResp, mir.Error) {
+func (s *followshipSrv) ListFollowings(c *gin.Context, r *web.ListFollowingsReq) (*web.ListFollowingsResp, mir.Error) {
 	he, err := s.Ds.GetUserByUsername(r.Username)
 	if err != nil {
 		logrus.Errorf("Ds.GetUserByUsername err: %s", err)
@@ -49,7 +49,7 @@ func (s *followshipSrv) ListFollowings(r *web.ListFollowingsReq) (*web.ListFollo
 	return (*web.ListFollowingsResp)(resp), nil
 }
 
-func (s *followshipSrv) ListFollows(r *web.ListFollowsReq) (*web.ListFollowsResp, mir.Error) {
+func (s *followshipSrv) ListFollows(c *gin.Context, r *web.ListFollowsReq) (*web.ListFollowsResp, mir.Error) {
 	he, err := s.Ds.GetUserByUsername(r.Username)
 	if err != nil {
 		logrus.Errorf("Ds.GetUserByUsername err: %s", err)
@@ -75,7 +75,7 @@ func (s *followshipSrv) ListFollows(r *web.ListFollowsReq) (*web.ListFollowsResp
 	return (*web.ListFollowsResp)(resp), nil
 }
 
-func (s *followshipSrv) UnfollowUser(r *web.UnfollowUserReq) mir.Error {
+func (s *followshipSrv) UnfollowUser(c *gin.Context, r *web.UnfollowUserReq) mir.Error {
 	if r.User == nil {
 		return xerror.UnauthorizedTokenError
 	} else if r.User.ID == r.UserId {
@@ -94,7 +94,7 @@ func (s *followshipSrv) UnfollowUser(r *web.UnfollowUserReq) mir.Error {
 	return nil
 }
 
-func (s *followshipSrv) FollowUser(r *web.FollowUserReq) mir.Error {
+func (s *followshipSrv) FollowUser(c *gin.Context, r *web.FollowUserReq) mir.Error {
 	if r.User == nil {
 		return xerror.UnauthorizedTokenError
 	} else if r.User.ID == r.UserId {

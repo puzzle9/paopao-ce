@@ -38,7 +38,7 @@ func JWT() gin.HandlerFunc {
 		if token != "" {
 			if claims, err := app.ParseToken(token); err == nil {
 				// 加载用户信息
-				if user, err := ums.GetUserByID(claims.UID); err == nil {
+				if user, err := ums.GetUserByID(c.Request.Context(), claims.UID); err == nil {
 					// 强制下线机制
 					if app.IssuerFrom(user.Salt) == claims.Issuer {
 						c.Set("USER", user)
@@ -131,7 +131,7 @@ func JwtLoose() gin.HandlerFunc {
 		if len(token) > 0 {
 			if claims, err := app.ParseToken(token); err == nil {
 				// 加载用户信息
-				user, err := ums.GetUserByID(claims.UID)
+				user, err := ums.GetUserByID(c.Request.Context(), claims.UID)
 				if err == nil && app.IssuerFrom(user.Salt) == claims.Issuer {
 					c.Set("UID", claims.UID)
 					c.Set("USERNAME", claims.Username)

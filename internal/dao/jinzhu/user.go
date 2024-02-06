@@ -5,6 +5,7 @@
 package jinzhu
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -59,13 +60,13 @@ func newUserRelationService(db *gorm.DB) core.UserRelationService {
 	}
 }
 
-func (s *userManageSrv) GetUserByID(id int64) (*ms.User, error) {
+func (s *userManageSrv) GetUserByID(c context.Context, id int64) (*ms.User, error) {
 	user := &dbr.User{
 		Model: &dbr.Model{
 			ID: id,
 		},
 	}
-	return user.Get(s.db)
+	return user.Get(s.db.WithContext(c))
 }
 
 func (s *userManageSrv) GetUserByUsername(username string) (*ms.User, error) {

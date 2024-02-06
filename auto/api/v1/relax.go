@@ -18,7 +18,7 @@ type Relax interface {
 	// Chain provide handlers chain for gin
 	Chain() gin.HandlersChain
 
-	GetUnreadMsgCount(*web.GetUnreadMsgCountReq) (*web.GetUnreadMsgCountResp, mir.Error)
+	GetUnreadMsgCount(*gin.Context, *web.GetUnreadMsgCountReq) (*web.GetUnreadMsgCountResp, mir.Error)
 
 	mustEmbedUnimplementedRelaxServant()
 }
@@ -54,7 +54,7 @@ func RegisterRelaxServant(e *gin.Engine, s Relax, m ...RelaxChain) {
 			s.Render(c, nil, err)
 			return
 		}
-		resp, err := s.GetUnreadMsgCount(req)
+		resp, err := s.GetUnreadMsgCount(c, req)
 		if err != nil {
 			s.Render(c, nil, err)
 			return
@@ -71,7 +71,7 @@ func (UnimplementedRelaxServant) Chain() gin.HandlersChain {
 	return nil
 }
 
-func (UnimplementedRelaxServant) GetUnreadMsgCount(req *web.GetUnreadMsgCountReq) (*web.GetUnreadMsgCountResp, mir.Error) {
+func (UnimplementedRelaxServant) GetUnreadMsgCount(c *gin.Context, req *web.GetUnreadMsgCountReq) (*web.GetUnreadMsgCountResp, mir.Error) {
 	return nil, mir.Errorln(http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 

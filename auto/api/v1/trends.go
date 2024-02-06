@@ -18,7 +18,7 @@ type Trends interface {
 	// Chain provide handlers chain for gin
 	Chain() gin.HandlersChain
 
-	GetIndexTrends(*web.GetIndexTrendsReq) (*web.GetIndexTrendsResp, mir.Error)
+	GetIndexTrends(*gin.Context, *web.GetIndexTrendsReq) (*web.GetIndexTrendsResp, mir.Error)
 
 	mustEmbedUnimplementedTrendsServant()
 }
@@ -42,7 +42,7 @@ func RegisterTrendsServant(e *gin.Engine, s Trends) {
 			s.Render(c, nil, err)
 			return
 		}
-		resp, err := s.GetIndexTrends(req)
+		resp, err := s.GetIndexTrends(c, req)
 		if err != nil {
 			s.Render(c, nil, err)
 			return
@@ -59,7 +59,7 @@ func (UnimplementedTrendsServant) Chain() gin.HandlersChain {
 	return nil
 }
 
-func (UnimplementedTrendsServant) GetIndexTrends(req *web.GetIndexTrendsReq) (*web.GetIndexTrendsResp, mir.Error) {
+func (UnimplementedTrendsServant) GetIndexTrends(c *gin.Context, req *web.GetIndexTrendsReq) (*web.GetIndexTrendsResp, mir.Error) {
 	return nil, mir.Errorln(http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 

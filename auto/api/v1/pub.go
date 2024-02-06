@@ -15,10 +15,10 @@ import (
 type Pub interface {
 	_default_
 
-	SendCaptcha(*web.SendCaptchaReq) mir.Error
-	GetCaptcha() (*web.GetCaptchaResp, mir.Error)
-	Register(*web.RegisterReq) (*web.RegisterResp, mir.Error)
-	Login(*web.LoginReq) (*web.LoginResp, mir.Error)
+	SendCaptcha(*gin.Context, *web.SendCaptchaReq) mir.Error
+	GetCaptcha(*gin.Context) (*web.GetCaptchaResp, mir.Error)
+	Register(*gin.Context, *web.RegisterReq) (*web.RegisterResp, mir.Error)
+	Login(*gin.Context, *web.LoginReq) (*web.LoginResp, mir.Error)
 	Version() (*web.VersionResp, mir.Error)
 
 	mustEmbedUnimplementedPubServant()
@@ -40,7 +40,7 @@ func RegisterPubServant(e *gin.Engine, s Pub) {
 			s.Render(c, nil, err)
 			return
 		}
-		s.Render(c, nil, s.SendCaptcha(req))
+		s.Render(c, nil, s.SendCaptcha(c, req))
 	})
 	router.Handle("GET", "/captcha", func(c *gin.Context) {
 		select {
@@ -49,7 +49,7 @@ func RegisterPubServant(e *gin.Engine, s Pub) {
 		default:
 		}
 
-		resp, err := s.GetCaptcha()
+		resp, err := s.GetCaptcha(c)
 		s.Render(c, resp, err)
 	})
 	router.Handle("POST", "/auth/register", func(c *gin.Context) {
@@ -63,7 +63,7 @@ func RegisterPubServant(e *gin.Engine, s Pub) {
 			s.Render(c, nil, err)
 			return
 		}
-		resp, err := s.Register(req)
+		resp, err := s.Register(c, req)
 		s.Render(c, resp, err)
 	})
 	router.Handle("POST", "/auth/login", func(c *gin.Context) {
@@ -77,7 +77,7 @@ func RegisterPubServant(e *gin.Engine, s Pub) {
 			s.Render(c, nil, err)
 			return
 		}
-		resp, err := s.Login(req)
+		resp, err := s.Login(c, req)
 		s.Render(c, resp, err)
 	})
 	router.Handle("GET", "/", func(c *gin.Context) {
@@ -95,19 +95,19 @@ func RegisterPubServant(e *gin.Engine, s Pub) {
 // UnimplementedPubServant can be embedded to have forward compatible implementations.
 type UnimplementedPubServant struct{}
 
-func (UnimplementedPubServant) SendCaptcha(req *web.SendCaptchaReq) mir.Error {
+func (UnimplementedPubServant) SendCaptcha(c *gin.Context, req *web.SendCaptchaReq) mir.Error {
 	return mir.Errorln(http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 
-func (UnimplementedPubServant) GetCaptcha() (*web.GetCaptchaResp, mir.Error) {
+func (UnimplementedPubServant) GetCaptcha(c *gin.Context) (*web.GetCaptchaResp, mir.Error) {
 	return nil, mir.Errorln(http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 
-func (UnimplementedPubServant) Register(req *web.RegisterReq) (*web.RegisterResp, mir.Error) {
+func (UnimplementedPubServant) Register(c *gin.Context, req *web.RegisterReq) (*web.RegisterResp, mir.Error) {
 	return nil, mir.Errorln(http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 
-func (UnimplementedPubServant) Login(req *web.LoginReq) (*web.LoginResp, mir.Error) {
+func (UnimplementedPubServant) Login(c *gin.Context, req *web.LoginReq) (*web.LoginResp, mir.Error) {
 	return nil, mir.Errorln(http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 
