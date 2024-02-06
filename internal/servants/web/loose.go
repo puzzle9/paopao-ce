@@ -80,10 +80,14 @@ func (s *looseSrv) Timeline(c *gin.Context, req *web.TimelineReq) (*web.Timeline
 }
 
 func (s *looseSrv) getIndexTweets(c *gin.Context, req *web.TimelineReq, limit int, offset int) (res *web.TimelineResp, err mir.Error) {
+	ctx := c.Request.Context()
+	ctx, span := s.Tracer.Start(ctx, "looseSrv.getIndexTweets")
+	defer span.End()
+
 	// 尝试直接从缓存中获取数据
 	key, ok := "", false
 	if res, key, ok = s.indexTweetsFromCache(c, req, limit, offset); ok {
-		// logrus.Debugf("getIndexTweets from cache key:%s", key)
+		// logrus.WithContext(ctx).WithField("key", key).Debug("getIndexTweets from cache")
 		return
 	}
 	var (
@@ -91,7 +95,7 @@ func (s *looseSrv) getIndexTweets(c *gin.Context, req *web.TimelineReq, limit in
 		total int64
 		xerr  error
 	)
-	ctx := c.Request.Context()
+
 	switch req.Style {
 	case web.StyleTweetsFollowing:
 		if req.User != nil {
@@ -109,12 +113,12 @@ func (s *looseSrv) getIndexTweets(c *gin.Context, req *web.TimelineReq, limit in
 		return nil, web.ErrGetPostsUnknowStyle
 	}
 	if xerr != nil {
-		logrus.Errorf("getIndexTweets occurs error[1]: %s", xerr)
+		logrus.WithContext(ctx).Errorf("getIndexTweets occurs error[1]: %s", xerr)
 		return nil, web.ErrGetPostFailed
 	}
 	postsFormated, verr := s.Ds.MergePosts(posts)
 	if verr != nil {
-		logrus.Errorf("getIndexTweets in merge posts occurs error: %s", verr)
+		logrus.WithContext(ctx).Errorf("getIndexTweets in merge posts occurs error: %s", verr)
 		return nil, web.ErrGetPostFailed
 	}
 	userId := int64(-1)
@@ -122,7 +126,7 @@ func (s *looseSrv) getIndexTweets(c *gin.Context, req *web.TimelineReq, limit in
 		userId = req.User.ID
 	}
 	if err := s.PrepareTweets(userId, postsFormated); err != nil {
-		logrus.Errorf("getIndexTweets occurs error[2]: %s", err)
+		logrus.WithContext(ctx).Errorf("getIndexTweets occurs error[2]: %s", err)
 		return nil, web.ErrGetPostsFailed
 	}
 	resp := joint.PageRespFrom(postsFormated, req.Page, req.PageSize, total)

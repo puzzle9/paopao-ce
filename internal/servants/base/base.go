@@ -26,6 +26,7 @@ import (
 	"github.com/rocboss/paopao-ce/pkg/app"
 	"github.com/rocboss/paopao-ce/pkg/types"
 	"github.com/rocboss/paopao-ce/pkg/xerror"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type BaseServant struct {
@@ -35,10 +36,11 @@ type BaseServant struct {
 type DaoServant struct {
 	*BaseServant
 
-	Dsa   core.WebDataServantA
-	Ds    core.DataService
-	Ts    core.TweetSearchService
-	Redis core.RedisCache
+	Tracer trace.Tracer
+	Dsa    core.WebDataServantA
+	Ds     core.DataService
+	Ts     core.TweetSearchService
+	Redis  core.RedisCache
 }
 
 type SentryHubSetter interface {
@@ -426,12 +428,13 @@ func NewBaseServant() *BaseServant {
 	}
 }
 
-func NewDaoServant() *DaoServant {
+func NewDaoServant(tracer trace.Tracer) *DaoServant {
 	return &DaoServant{
 		BaseServant: NewBaseServant(),
 		Redis:       cache.NewRedisCache(),
 		Dsa:         dao.WebDataServantA(),
 		Ds:          dao.DataService(),
 		Ts:          dao.TweetSearchService(),
+		Tracer:      tracer,
 	}
 }

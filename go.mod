@@ -40,6 +40,7 @@ require (
 	github.com/spf13/viper v1.18.2
 	github.com/tencentyun/cos-go-sdk-v5 v0.7.46
 	github.com/uptrace/opentelemetry-go-extra/otelgorm v0.2.3
+	github.com/uptrace/opentelemetry-go-extra/otellogrus v0.2.3
 	github.com/yinheli/mahonia v0.0.0-20131226213531-0eef680515cc
 	go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin v0.47.0
 	go.opentelemetry.io/otel v1.22.0
@@ -47,6 +48,7 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.22.0
 	go.opentelemetry.io/otel/sdk v1.22.0
 	go.opentelemetry.io/otel/sdk/metric v1.22.0
+	go.opentelemetry.io/otel/trace v1.22.0
 	go.uber.org/automaxprocs v1.5.3
 	golang.org/x/crypto v0.18.0
 	google.golang.org/grpc v1.61.0
@@ -145,11 +147,11 @@ require (
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.11 // indirect
 	github.com/uptrace/opentelemetry-go-extra/otelsql v0.2.3 // indirect
+	github.com/uptrace/opentelemetry-go-extra/otelutil v0.2.3 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.40.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.22.0 // indirect
 	go.opentelemetry.io/otel/metric v1.22.0 // indirect
-	go.opentelemetry.io/otel/trace v1.22.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.0.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
