@@ -1,3 +1,7 @@
+// Copyright 2022 ROC. All rights reserved.
+// Use of this source code is governed by a MIT style
+// license that can be found in the LICENSE file.
+
 package conf
 
 import (
@@ -20,7 +24,6 @@ var (
 )
 
 func InitTelemetry() (shutdownFn func(), err error) {
-	initResource()
 	var (
 		tp *sdktrace.TracerProvider
 		mp *sdkmetric.MeterProvider
