@@ -16,6 +16,7 @@ import (
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
 )
 
 var (
@@ -47,10 +48,9 @@ func initResource() *sdkresource.Resource {
 	initResourcesOnce.Do(func() {
 		extraResources, _ := sdkresource.New(
 			context.Background(),
-			sdkresource.WithOS(),
-			sdkresource.WithProcess(),
 			sdkresource.WithContainer(),
 			sdkresource.WithHost(),
+			sdkresource.WithSchemaURL(semconv.SchemaURL),
 		)
 		resource, _ = sdkresource.Merge(
 			sdkresource.Default(),
