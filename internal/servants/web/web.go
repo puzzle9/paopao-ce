@@ -15,7 +15,6 @@ import (
 	"github.com/rocboss/paopao-ce/internal/dao"
 	"github.com/rocboss/paopao-ce/internal/dao/cache"
 	"github.com/rocboss/paopao-ce/internal/servants/base"
-	"go.opentelemetry.io/otel"
 )
 
 var (
@@ -31,8 +30,7 @@ var (
 // RouteWeb register web route
 func RouteWeb(e *gin.Engine) {
 	lazyInitial()
-	tracer := otel.Tracer("WebServant")
-	ds := base.NewDaoServant(tracer)
+	ds := base.NewDaoServant()
 	// aways register servants
 	api.RegisterAdminServant(e, newAdminSrv(ds, _wc))
 	api.RegisterCoreServant(e, newCoreSrv(ds, _oss, _wc))

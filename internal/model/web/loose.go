@@ -53,13 +53,14 @@ type TweetCommentsResp struct {
 }
 
 type TimelineReq struct {
-	BaseInfo   `form:"-"  binding:"-"`
-	Query      string              `form:"query"`
-	Visibility []core.PostVisibleT `form:"query"`
-	Type       string              `form:"type"`
-	Style      string              `form:"style"`
-	Page       int                 `form:"-"  binding:"-"`
-	PageSize   int                 `form:"-"  binding:"-"`
+	joint.BaseTraceContext `form:"-"  binding:"-"`
+	BaseInfo               `form:"-"  binding:"-"`
+	Query                  string              `form:"query"`
+	Visibility             []core.PostVisibleT `form:"query"`
+	Type                   string              `form:"type"`
+	Style                  string              `form:"style"`
+	Page                   int                 `form:"-"  binding:"-"`
+	PageSize               int                 `form:"-"  binding:"-"`
 }
 
 type TimelineResp struct {
@@ -67,11 +68,12 @@ type TimelineResp struct {
 }
 
 type GetUserTweetsReq struct {
-	BaseInfo `form:"-" binding:"-"`
-	Username string `form:"username" binding:"required"`
-	Style    string `form:"style"`
-	Page     int    `form:"-" binding:"-"`
-	PageSize int    `form:"-" binding:"-"`
+	joint.BaseTraceContext `form:"-"  binding:"-"`
+	BaseInfo               `form:"-" binding:"-"`
+	Username               string `form:"username" binding:"required"`
+	Style                  string `form:"style"`
+	Page                   int    `form:"-" binding:"-"`
+	PageSize               int    `form:"-" binding:"-"`
 }
 
 type GetUserTweetsResp struct {
@@ -132,6 +134,7 @@ func (r *TimelineReq) Bind(c *gin.Context) mir.Error {
 	r.BaseInfo = BaseInfo{
 		User: user,
 	}
+	r.SetContext(c.Request.Context())
 	r.Page, r.PageSize = app.GetPageInfo(c)
 	r.Query, r.Type, r.Style = c.Query("query"), "search", c.Query("style")
 	return nil

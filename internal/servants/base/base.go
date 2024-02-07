@@ -26,8 +26,55 @@ import (
 	"github.com/rocboss/paopao-ce/pkg/app"
 	"github.com/rocboss/paopao-ce/pkg/types"
 	"github.com/rocboss/paopao-ce/pkg/xerror"
-	"go.opentelemetry.io/otel/trace"
 )
+
+var (
+	bindAnyFn func(c *gin.Context, obj any)
+)
+
+func init() {
+	if conf.UseOpenTelemetry() {
+		bindAnyFn = func(c *gin.Context, obj any) {
+			// setup *core.User if needed
+			if setter, ok := obj.(UserSetter); ok {
+				user, _ := UserFrom(c)
+				setter.SetUser(user)
+			}
+			// setup UserId if needed
+			if setter, ok := obj.(UserIdSetter); ok {
+				uid, _ := UserIdFrom(c)
+				setter.SetUserId(uid)
+			}
+			// setup PageInfo if needed
+			if setter, ok := obj.(PageInfoSetter); ok {
+				page, pageSize := app.GetPageInfo(c)
+				setter.SetPageInfo(page, pageSize)
+			}
+		}
+	} else {
+		bindAnyFn = func(c *gin.Context, obj any) {
+			// setup *core.User if needed
+			if setter, ok := obj.(UserSetter); ok {
+				user, _ := UserFrom(c)
+				setter.SetUser(user)
+			}
+			// setup UserId if needed
+			if setter, ok := obj.(UserIdSetter); ok {
+				uid, _ := UserIdFrom(c)
+				setter.SetUserId(uid)
+			}
+			// setup PageInfo if needed
+			if setter, ok := obj.(PageInfoSetter); ok {
+				page, pageSize := app.GetPageInfo(c)
+				setter.SetPageInfo(page, pageSize)
+			}
+			// setup trace context if needed
+			if setter, ok := obj.(joint.TraceContext); ok {
+				setter.SetContext(c.Request.Context())
+			}
+		}
+	}
+}
 
 type BaseServant struct {
 	bindAny func(c *gin.Context, obj any) mir.Error
@@ -36,11 +83,10 @@ type BaseServant struct {
 type DaoServant struct {
 	*BaseServant
 
-	Tracer trace.Tracer
-	Dsa    core.WebDataServantA
-	Ds     core.DataService
-	Ts     core.TweetSearchService
-	Redis  core.RedisCache
+	Dsa   core.WebDataServantA
+	Ds    core.DataService
+	Ts    core.TweetSearchService
+	Redis core.RedisCache
 }
 
 type SentryHubSetter interface {
@@ -89,21 +135,7 @@ func bindAny(c *gin.Context, obj any) mir.Error {
 	if err != nil {
 		return mir.NewError(xerror.InvalidParams.StatusCode(), xerror.InvalidParams.WithDetails(errs.Error()))
 	}
-	// setup *core.User if needed
-	if setter, ok := obj.(UserSetter); ok {
-		user, _ := UserFrom(c)
-		setter.SetUser(user)
-	}
-	// setup UserId if needed
-	if setter, ok := obj.(UserIdSetter); ok {
-		uid, _ := UserIdFrom(c)
-		setter.SetUserId(uid)
-	}
-	// setup PageInfo if needed
-	if setter, ok := obj.(PageInfoSetter); ok {
-		page, pageSize := app.GetPageInfo(c)
-		setter.SetPageInfo(page, pageSize)
-	}
+	bindAnyFn(c, obj)
 	return nil
 }
 
@@ -122,23 +154,8 @@ func bindAnySentry(c *gin.Context, obj any) mir.Error {
 	if setter, ok := obj.(SentryHubSetter); ok && hub != nil {
 		setter.SetSentryHub(hub)
 	}
-	// setup *core.User if needed
-	if setter, ok := obj.(UserSetter); ok {
-		user, _ := UserFrom(c)
-		setter.SetUser(user)
-	}
-	// setup UserId if needed
-	if setter, ok := obj.(UserIdSetter); ok {
-		uid, _ := UserIdFrom(c)
-		setter.SetUserId(uid)
-	}
-	// setup PageInfo if needed
-	if setter, ok := obj.(PageInfoSetter); ok {
-		page, pageSize := app.GetPageInfo(c)
-		setter.SetPageInfo(page, pageSize)
-	}
+	bindAnyFn(c, obj)
 	return nil
-
 }
 
 func RenderAny(c *gin.Context, data any, err mir.Error) {
@@ -428,13 +445,12 @@ func NewBaseServant() *BaseServant {
 	}
 }
 
-func NewDaoServant(tracer trace.Tracer) *DaoServant {
+func NewDaoServant() *DaoServant {
 	return &DaoServant{
 		BaseServant: NewBaseServant(),
 		Redis:       cache.NewRedisCache(),
 		Dsa:         dao.WebDataServantA(),
 		Ds:          dao.DataService(),
 		Ts:          dao.TweetSearchService(),
-		Tracer:      tracer,
 	}
 }

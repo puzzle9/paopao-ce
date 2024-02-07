@@ -4,10 +4,13 @@
 
 package web
 
+import "github.com/rocboss/paopao-ce/internal/model/joint"
+
 type ChangeUserStatusReq struct {
-	BaseInfo `json:"-" binding:"-"`
-	ID       int64 `json:"id" form:"id" binding:"required"`
-	Status   int   `json:"status" form:"status" binding:"required,oneof=1 2"`
+	joint.BaseTraceContext `form:"-"  binding:"-"`
+	BaseInfo               `json:"-" binding:"-"`
+	ID                     int64 `json:"id" form:"id" binding:"required"`
+	Status                 int   `json:"status" form:"status" binding:"required,oneof=1 2"`
 }
 
 type SiteInfoReq struct {

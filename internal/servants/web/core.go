@@ -48,7 +48,7 @@ func (s *coreSrv) Chain() gin.HandlersChain {
 	return gin.HandlersChain{chain.JWT()}
 }
 
-func (s *coreSrv) SyncSearchIndex(c *gin.Context, req *web.SyncSearchIndexReq) mir.Error {
+func (s *coreSrv) SyncSearchIndex(req *web.SyncSearchIndexReq) mir.Error {
 	if req.User != nil && req.User.IsAdmin {
 		s.PushAllPostToSearch()
 	} else {
@@ -57,7 +57,7 @@ func (s *coreSrv) SyncSearchIndex(c *gin.Context, req *web.SyncSearchIndexReq) m
 	return nil
 }
 
-func (s *coreSrv) GetUserInfo(c *gin.Context, req *web.UserInfoReq) (*web.UserInfoResp, mir.Error) {
+func (s *coreSrv) GetUserInfo(req *web.UserInfoReq) (*web.UserInfoResp, mir.Error) {
 	user, err := s.Ds.UserProfileByName(req.Username)
 	if err != nil {
 		logrus.Errorf("coreSrv.GetUserInfo occurs error[1]: %s", err)
@@ -86,7 +86,7 @@ func (s *coreSrv) GetUserInfo(c *gin.Context, req *web.UserInfoReq) (*web.UserIn
 	return resp, nil
 }
 
-func (s *coreSrv) GetMessages(c *gin.Context, req *web.GetMessagesReq) (res *web.GetMessagesResp, _ mir.Error) {
+func (s *coreSrv) GetMessages(req *web.GetMessagesReq) (res *web.GetMessagesResp, _ mir.Error) {
 	limit, offset := req.PageSize, (req.Page-1)*req.PageSize
 	// 尝试直接从缓存中获取数据
 	key, ok := "", false
@@ -102,12 +102,12 @@ func (s *coreSrv) GetMessages(c *gin.Context, req *web.GetMessagesReq) (res *web
 	for _, mf := range messages {
 		// TODO: 优化处理这里的user获取逻辑以及错误处理
 		if mf.SenderUserID > 0 {
-			if user, err := s.Ds.GetUserByID(c.Request.Context(), mf.SenderUserID); err == nil {
+			if user, err := s.Ds.GetUserByID(req.Context(), mf.SenderUserID); err == nil {
 				mf.SenderUser = user.Format()
 			}
 		}
 		if mf.Type == ms.MsgTypeWhisper && mf.ReceiverUserID != req.Uid {
-			if user, err := s.Ds.GetUserByID(c.Request.Context(), mf.ReceiverUserID); err == nil {
+			if user, err := s.Ds.GetUserByID(req.Context(), mf.ReceiverUserID); err == nil {
 				mf.ReceiverUser = user.Format()
 			}
 		}
@@ -152,7 +152,7 @@ func (s *coreSrv) GetMessages(c *gin.Context, req *web.GetMessagesReq) (res *web
 	}, nil
 }
 
-func (s *coreSrv) ReadMessage(c *gin.Context, req *web.ReadMessageReq) mir.Error {
+func (s *coreSrv) ReadMessage(req *web.ReadMessageReq) mir.Error {
 	message, err := s.Ds.GetMessageByID(req.ID)
 	if err != nil {
 		return web.ErrReadMessageFailed
@@ -169,7 +169,7 @@ func (s *coreSrv) ReadMessage(c *gin.Context, req *web.ReadMessageReq) mir.Error
 	return nil
 }
 
-func (s *coreSrv) ReadAllMessage(c *gin.Context, req *web.ReadAllMessageReq) mir.Error {
+func (s *coreSrv) ReadAllMessage(req *web.ReadAllMessageReq) mir.Error {
 	if err := s.Ds.ReadAllMessage(req.Uid); err != nil {
 		logrus.Errorf("coreSrv.Ds.ReadAllMessage err: %s", err)
 		return web.ErrReadMessageFailed
@@ -179,7 +179,7 @@ func (s *coreSrv) ReadAllMessage(c *gin.Context, req *web.ReadAllMessageReq) mir
 	return nil
 }
 
-func (s *coreSrv) SendUserWhisper(c *gin.Context, req *web.SendWhisperReq) mir.Error {
+func (s *coreSrv) SendUserWhisper(req *web.SendWhisperReq) mir.Error {
 	// 不允许发送私信给自己
 	if req.Uid == req.UserID {
 		return web.ErrNoWhisperToSelf
@@ -209,7 +209,7 @@ func (s *coreSrv) SendUserWhisper(c *gin.Context, req *web.SendWhisperReq) mir.E
 	return nil
 }
 
-func (s *coreSrv) GetCollections(c *gin.Context, req *web.GetCollectionsReq) (*web.GetCollectionsResp, mir.Error) {
+func (s *coreSrv) GetCollections(req *web.GetCollectionsReq) (*web.GetCollectionsResp, mir.Error) {
 	collections, err := s.Ds.GetUserPostCollections(req.UserId, (req.Page-1)*req.PageSize, req.PageSize)
 	if err != nil {
 		logrus.Errorf("Ds.GetUserPostCollections err: %s", err)
@@ -237,7 +237,7 @@ func (s *coreSrv) GetCollections(c *gin.Context, req *web.GetCollectionsReq) (*w
 	return (*web.GetCollectionsResp)(resp), nil
 }
 
-func (s *coreSrv) UserPhoneBind(c *gin.Context, req *web.UserPhoneBindReq) mir.Error {
+func (s *coreSrv) UserPhoneBind(req *web.UserPhoneBindReq) mir.Error {
 	// 手机重复性检查
 	u, err := s.Ds.GetUserByPhone(req.Phone)
 	if err == nil && u.Model != nil && u.ID != 0 && u.ID != req.User.ID {
@@ -274,7 +274,7 @@ func (s *coreSrv) UserPhoneBind(c *gin.Context, req *web.UserPhoneBindReq) mir.E
 	return nil
 }
 
-func (s *coreSrv) GetStars(c *gin.Context, req *web.GetStarsReq) (*web.GetStarsResp, mir.Error) {
+func (s *coreSrv) GetStars(req *web.GetStarsReq) (*web.GetStarsResp, mir.Error) {
 	stars, err := s.Ds.GetUserPostStars(req.UserId, req.PageSize, (req.Page-1)*req.PageSize)
 	if err != nil {
 		logrus.Errorf("Ds.GetUserPostStars err: %s", err)
@@ -298,7 +298,7 @@ func (s *coreSrv) GetStars(c *gin.Context, req *web.GetStarsReq) (*web.GetStarsR
 	return (*web.GetStarsResp)(resp), nil
 }
 
-func (s *coreSrv) ChangePassword(c *gin.Context, req *web.ChangePasswordReq) mir.Error {
+func (s *coreSrv) ChangePassword(req *web.ChangePasswordReq) mir.Error {
 	// 密码检查
 	if err := checkPassword(req.Password); err != nil {
 		return err
@@ -317,7 +317,7 @@ func (s *coreSrv) ChangePassword(c *gin.Context, req *web.ChangePasswordReq) mir
 	return nil
 }
 
-func (s *coreSrv) SuggestTags(c *gin.Context, req *web.SuggestTagsReq) (*web.SuggestTagsResp, mir.Error) {
+func (s *coreSrv) SuggestTags(req *web.SuggestTagsReq) (*web.SuggestTagsResp, mir.Error) {
 	tags, err := s.Ds.TagsByKeyword(req.Keyword)
 	if err != nil {
 		logrus.Errorf("Ds.GetTagsByKeyword err: %s", err)
@@ -330,7 +330,7 @@ func (s *coreSrv) SuggestTags(c *gin.Context, req *web.SuggestTagsReq) (*web.Sug
 	return resp, nil
 }
 
-func (s *coreSrv) SuggestUsers(c *gin.Context, req *web.SuggestUsersReq) (*web.SuggestUsersResp, mir.Error) {
+func (s *coreSrv) SuggestUsers(req *web.SuggestUsersReq) (*web.SuggestUsersResp, mir.Error) {
 	users, err := s.Ds.GetUsersByKeyword(req.Keyword)
 	if err != nil {
 		logrus.Errorf("Ds.GetUsersByKeyword err: %s", err)
@@ -343,7 +343,7 @@ func (s *coreSrv) SuggestUsers(c *gin.Context, req *web.SuggestUsersReq) (*web.S
 	return resp, nil
 }
 
-func (s *coreSrv) ChangeNickname(c *gin.Context, req *web.ChangeNicknameReq) mir.Error {
+func (s *coreSrv) ChangeNickname(req *web.ChangeNicknameReq) mir.Error {
 	if utf8.RuneCountInString(req.Nickname) < 2 || utf8.RuneCountInString(req.Nickname) > 12 {
 		return web.ErrNicknameLengthLimit
 	}
@@ -358,7 +358,7 @@ func (s *coreSrv) ChangeNickname(c *gin.Context, req *web.ChangeNicknameReq) mir
 	return nil
 }
 
-func (s *coreSrv) ChangeAvatar(c *gin.Context, req *web.ChangeAvatarReq) (xerr mir.Error) {
+func (s *coreSrv) ChangeAvatar(req *web.ChangeAvatarReq) (xerr mir.Error) {
 	defer func() {
 		if xerr != nil {
 			deleteOssObjects(s.oss, []string{req.Avatar})
@@ -384,7 +384,7 @@ func (s *coreSrv) ChangeAvatar(c *gin.Context, req *web.ChangeAvatarReq) (xerr m
 	return nil
 }
 
-func (s *coreSrv) TweetCollectionStatus(c *gin.Context, req *web.TweetCollectionStatusReq) (*web.TweetCollectionStatusResp, mir.Error) {
+func (s *coreSrv) TweetCollectionStatus(req *web.TweetCollectionStatusReq) (*web.TweetCollectionStatusResp, mir.Error) {
 	resp := &web.TweetCollectionStatusResp{
 		Status: true,
 	}
@@ -395,7 +395,7 @@ func (s *coreSrv) TweetCollectionStatus(c *gin.Context, req *web.TweetCollection
 	return resp, nil
 }
 
-func (s *coreSrv) TweetStarStatus(c *gin.Context, req *web.TweetStarStatusReq) (*web.TweetStarStatusResp, mir.Error) {
+func (s *coreSrv) TweetStarStatus(req *web.TweetStarStatusReq) (*web.TweetStarStatusResp, mir.Error) {
 	resp := &web.TweetStarStatusResp{
 		Status: true,
 	}

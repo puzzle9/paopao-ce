@@ -18,14 +18,14 @@ type Pub struct {
 	Version func(Get) web.VersionResp `mir:"/"`
 
 	// Login 用户登录
-	Login func(Post, Context, web.LoginReq) web.LoginResp `mir:"/auth/login"`
+	Login func(Post, web.LoginReq) web.LoginResp `mir:"/auth/login"`
 
 	// Register 用户注册
-	Register func(Post, Context, web.RegisterReq) web.RegisterResp `mir:"/auth/register"`
+	Register func(Post, web.RegisterReq) web.RegisterResp `mir:"/auth/register"`
 
 	// GetCaptcha 获取验证码
-	GetCaptcha func(Get, Context) web.GetCaptchaResp `mir:"/captcha"`
+	GetCaptcha func(Get) web.GetCaptchaResp `mir:"/captcha"`
 
 	// SendCaptcha 发送验证码
-	SendCaptcha func(Post, Context, web.SendCaptchaReq) `mir:"/captcha"`
+	SendCaptcha func(Post, web.SendCaptchaReq) `mir:"/captcha"`
 }

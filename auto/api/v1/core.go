@@ -18,22 +18,22 @@ type Core interface {
 	// Chain provide handlers chain for gin
 	Chain() gin.HandlersChain
 
-	TweetCollectionStatus(*gin.Context, *web.TweetCollectionStatusReq) (*web.TweetCollectionStatusResp, mir.Error)
-	TweetStarStatus(*gin.Context, *web.TweetStarStatusReq) (*web.TweetStarStatusResp, mir.Error)
-	SuggestTags(*gin.Context, *web.SuggestTagsReq) (*web.SuggestTagsResp, mir.Error)
-	SuggestUsers(*gin.Context, *web.SuggestUsersReq) (*web.SuggestUsersResp, mir.Error)
-	ChangeAvatar(*gin.Context, *web.ChangeAvatarReq) mir.Error
-	ChangeNickname(*gin.Context, *web.ChangeNicknameReq) mir.Error
-	ChangePassword(*gin.Context, *web.ChangePasswordReq) mir.Error
-	UserPhoneBind(*gin.Context, *web.UserPhoneBindReq) mir.Error
-	GetStars(*gin.Context, *web.GetStarsReq) (*web.GetStarsResp, mir.Error)
-	GetCollections(*gin.Context, *web.GetCollectionsReq) (*web.GetCollectionsResp, mir.Error)
-	SendUserWhisper(*gin.Context, *web.SendWhisperReq) mir.Error
-	ReadAllMessage(*gin.Context, *web.ReadAllMessageReq) mir.Error
-	ReadMessage(*gin.Context, *web.ReadMessageReq) mir.Error
-	GetMessages(*gin.Context, *web.GetMessagesReq) (*web.GetMessagesResp, mir.Error)
-	GetUserInfo(*gin.Context, *web.UserInfoReq) (*web.UserInfoResp, mir.Error)
-	SyncSearchIndex(*gin.Context, *web.SyncSearchIndexReq) mir.Error
+	TweetCollectionStatus(*web.TweetCollectionStatusReq) (*web.TweetCollectionStatusResp, mir.Error)
+	TweetStarStatus(*web.TweetStarStatusReq) (*web.TweetStarStatusResp, mir.Error)
+	SuggestTags(*web.SuggestTagsReq) (*web.SuggestTagsResp, mir.Error)
+	SuggestUsers(*web.SuggestUsersReq) (*web.SuggestUsersResp, mir.Error)
+	ChangeAvatar(*web.ChangeAvatarReq) mir.Error
+	ChangeNickname(*web.ChangeNicknameReq) mir.Error
+	ChangePassword(*web.ChangePasswordReq) mir.Error
+	UserPhoneBind(*web.UserPhoneBindReq) mir.Error
+	GetStars(*web.GetStarsReq) (*web.GetStarsResp, mir.Error)
+	GetCollections(*web.GetCollectionsReq) (*web.GetCollectionsResp, mir.Error)
+	SendUserWhisper(*web.SendWhisperReq) mir.Error
+	ReadAllMessage(*web.ReadAllMessageReq) mir.Error
+	ReadMessage(*web.ReadMessageReq) mir.Error
+	GetMessages(*web.GetMessagesReq) (*web.GetMessagesResp, mir.Error)
+	GetUserInfo(*web.UserInfoReq) (*web.UserInfoResp, mir.Error)
+	SyncSearchIndex(*web.SyncSearchIndexReq) mir.Error
 
 	mustEmbedUnimplementedCoreServant()
 }
@@ -58,7 +58,7 @@ func RegisterCoreServant(e *gin.Engine, s Core) {
 			s.Render(c, nil, err)
 			return
 		}
-		resp, err := s.TweetCollectionStatus(c, req)
+		resp, err := s.TweetCollectionStatus(req)
 		s.Render(c, resp, err)
 	})
 	router.Handle("GET", "/post/star", func(c *gin.Context) {
@@ -73,7 +73,7 @@ func RegisterCoreServant(e *gin.Engine, s Core) {
 			s.Render(c, nil, err)
 			return
 		}
-		resp, err := s.TweetStarStatus(c, req)
+		resp, err := s.TweetStarStatus(req)
 		s.Render(c, resp, err)
 	})
 	router.Handle("GET", "/suggest/tags", func(c *gin.Context) {
@@ -88,7 +88,7 @@ func RegisterCoreServant(e *gin.Engine, s Core) {
 			s.Render(c, nil, err)
 			return
 		}
-		resp, err := s.SuggestTags(c, req)
+		resp, err := s.SuggestTags(req)
 		s.Render(c, resp, err)
 	})
 	router.Handle("GET", "/suggest/users", func(c *gin.Context) {
@@ -103,7 +103,7 @@ func RegisterCoreServant(e *gin.Engine, s Core) {
 			s.Render(c, nil, err)
 			return
 		}
-		resp, err := s.SuggestUsers(c, req)
+		resp, err := s.SuggestUsers(req)
 		s.Render(c, resp, err)
 	})
 	router.Handle("POST", "/user/avatar", func(c *gin.Context) {
@@ -117,7 +117,7 @@ func RegisterCoreServant(e *gin.Engine, s Core) {
 			s.Render(c, nil, err)
 			return
 		}
-		s.Render(c, nil, s.ChangeAvatar(c, req))
+		s.Render(c, nil, s.ChangeAvatar(req))
 	})
 	router.Handle("POST", "/user/nickname", func(c *gin.Context) {
 		select {
@@ -130,7 +130,7 @@ func RegisterCoreServant(e *gin.Engine, s Core) {
 			s.Render(c, nil, err)
 			return
 		}
-		s.Render(c, nil, s.ChangeNickname(c, req))
+		s.Render(c, nil, s.ChangeNickname(req))
 	})
 	router.Handle("POST", "/user/password", func(c *gin.Context) {
 		select {
@@ -143,7 +143,7 @@ func RegisterCoreServant(e *gin.Engine, s Core) {
 			s.Render(c, nil, err)
 			return
 		}
-		s.Render(c, nil, s.ChangePassword(c, req))
+		s.Render(c, nil, s.ChangePassword(req))
 	})
 	router.Handle("POST", "/user/phone", func(c *gin.Context) {
 		select {
@@ -156,7 +156,7 @@ func RegisterCoreServant(e *gin.Engine, s Core) {
 			s.Render(c, nil, err)
 			return
 		}
-		s.Render(c, nil, s.UserPhoneBind(c, req))
+		s.Render(c, nil, s.UserPhoneBind(req))
 	})
 	router.Handle("GET", "/user/stars", func(c *gin.Context) {
 		select {
@@ -170,7 +170,7 @@ func RegisterCoreServant(e *gin.Engine, s Core) {
 			s.Render(c, nil, err)
 			return
 		}
-		resp, err := s.GetStars(c, req)
+		resp, err := s.GetStars(req)
 		s.Render(c, resp, err)
 	})
 	router.Handle("GET", "/user/collections", func(c *gin.Context) {
@@ -185,7 +185,7 @@ func RegisterCoreServant(e *gin.Engine, s Core) {
 			s.Render(c, nil, err)
 			return
 		}
-		resp, err := s.GetCollections(c, req)
+		resp, err := s.GetCollections(req)
 		s.Render(c, resp, err)
 	})
 	router.Handle("POST", "/user/whisper", func(c *gin.Context) {
@@ -199,7 +199,7 @@ func RegisterCoreServant(e *gin.Engine, s Core) {
 			s.Render(c, nil, err)
 			return
 		}
-		s.Render(c, nil, s.SendUserWhisper(c, req))
+		s.Render(c, nil, s.SendUserWhisper(req))
 	})
 	router.Handle("POST", "/user/message/readall", func(c *gin.Context) {
 		select {
@@ -212,7 +212,7 @@ func RegisterCoreServant(e *gin.Engine, s Core) {
 			s.Render(c, nil, err)
 			return
 		}
-		s.Render(c, nil, s.ReadAllMessage(c, req))
+		s.Render(c, nil, s.ReadAllMessage(req))
 	})
 	router.Handle("POST", "/user/message/read", func(c *gin.Context) {
 		select {
@@ -225,7 +225,7 @@ func RegisterCoreServant(e *gin.Engine, s Core) {
 			s.Render(c, nil, err)
 			return
 		}
-		s.Render(c, nil, s.ReadMessage(c, req))
+		s.Render(c, nil, s.ReadMessage(req))
 	})
 	router.Handle("GET", "/user/messages", func(c *gin.Context) {
 		select {
@@ -238,7 +238,7 @@ func RegisterCoreServant(e *gin.Engine, s Core) {
 			s.Render(c, nil, err)
 			return
 		}
-		resp, err := s.GetMessages(c, req)
+		resp, err := s.GetMessages(req)
 		if err != nil {
 			s.Render(c, nil, err)
 			return
@@ -258,7 +258,7 @@ func RegisterCoreServant(e *gin.Engine, s Core) {
 			s.Render(c, nil, err)
 			return
 		}
-		resp, err := s.GetUserInfo(c, req)
+		resp, err := s.GetUserInfo(req)
 		s.Render(c, resp, err)
 	})
 	router.Handle("GET", "/sync/index", func(c *gin.Context) {
@@ -272,7 +272,7 @@ func RegisterCoreServant(e *gin.Engine, s Core) {
 			s.Render(c, nil, err)
 			return
 		}
-		s.Render(c, nil, s.SyncSearchIndex(c, req))
+		s.Render(c, nil, s.SyncSearchIndex(req))
 	})
 }
 
@@ -283,67 +283,67 @@ func (UnimplementedCoreServant) Chain() gin.HandlersChain {
 	return nil
 }
 
-func (UnimplementedCoreServant) TweetCollectionStatus(c *gin.Context, req *web.TweetCollectionStatusReq) (*web.TweetCollectionStatusResp, mir.Error) {
+func (UnimplementedCoreServant) TweetCollectionStatus(req *web.TweetCollectionStatusReq) (*web.TweetCollectionStatusResp, mir.Error) {
 	return nil, mir.Errorln(http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 
-func (UnimplementedCoreServant) TweetStarStatus(c *gin.Context, req *web.TweetStarStatusReq) (*web.TweetStarStatusResp, mir.Error) {
+func (UnimplementedCoreServant) TweetStarStatus(req *web.TweetStarStatusReq) (*web.TweetStarStatusResp, mir.Error) {
 	return nil, mir.Errorln(http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 
-func (UnimplementedCoreServant) SuggestTags(c *gin.Context, req *web.SuggestTagsReq) (*web.SuggestTagsResp, mir.Error) {
+func (UnimplementedCoreServant) SuggestTags(req *web.SuggestTagsReq) (*web.SuggestTagsResp, mir.Error) {
 	return nil, mir.Errorln(http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 
-func (UnimplementedCoreServant) SuggestUsers(c *gin.Context, req *web.SuggestUsersReq) (*web.SuggestUsersResp, mir.Error) {
+func (UnimplementedCoreServant) SuggestUsers(req *web.SuggestUsersReq) (*web.SuggestUsersResp, mir.Error) {
 	return nil, mir.Errorln(http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 
-func (UnimplementedCoreServant) ChangeAvatar(c *gin.Context, req *web.ChangeAvatarReq) mir.Error {
+func (UnimplementedCoreServant) ChangeAvatar(req *web.ChangeAvatarReq) mir.Error {
 	return mir.Errorln(http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 
-func (UnimplementedCoreServant) ChangeNickname(c *gin.Context, req *web.ChangeNicknameReq) mir.Error {
+func (UnimplementedCoreServant) ChangeNickname(req *web.ChangeNicknameReq) mir.Error {
 	return mir.Errorln(http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 
-func (UnimplementedCoreServant) ChangePassword(c *gin.Context, req *web.ChangePasswordReq) mir.Error {
+func (UnimplementedCoreServant) ChangePassword(req *web.ChangePasswordReq) mir.Error {
 	return mir.Errorln(http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 
-func (UnimplementedCoreServant) UserPhoneBind(c *gin.Context, req *web.UserPhoneBindReq) mir.Error {
+func (UnimplementedCoreServant) UserPhoneBind(req *web.UserPhoneBindReq) mir.Error {
 	return mir.Errorln(http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 
-func (UnimplementedCoreServant) GetStars(c *gin.Context, req *web.GetStarsReq) (*web.GetStarsResp, mir.Error) {
+func (UnimplementedCoreServant) GetStars(req *web.GetStarsReq) (*web.GetStarsResp, mir.Error) {
 	return nil, mir.Errorln(http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 
-func (UnimplementedCoreServant) GetCollections(c *gin.Context, req *web.GetCollectionsReq) (*web.GetCollectionsResp, mir.Error) {
+func (UnimplementedCoreServant) GetCollections(req *web.GetCollectionsReq) (*web.GetCollectionsResp, mir.Error) {
 	return nil, mir.Errorln(http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 
-func (UnimplementedCoreServant) SendUserWhisper(c *gin.Context, req *web.SendWhisperReq) mir.Error {
+func (UnimplementedCoreServant) SendUserWhisper(req *web.SendWhisperReq) mir.Error {
 	return mir.Errorln(http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 
-func (UnimplementedCoreServant) ReadAllMessage(c *gin.Context, req *web.ReadAllMessageReq) mir.Error {
+func (UnimplementedCoreServant) ReadAllMessage(req *web.ReadAllMessageReq) mir.Error {
 	return mir.Errorln(http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 
-func (UnimplementedCoreServant) ReadMessage(c *gin.Context, req *web.ReadMessageReq) mir.Error {
+func (UnimplementedCoreServant) ReadMessage(req *web.ReadMessageReq) mir.Error {
 	return mir.Errorln(http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 
-func (UnimplementedCoreServant) GetMessages(c *gin.Context, req *web.GetMessagesReq) (*web.GetMessagesResp, mir.Error) {
+func (UnimplementedCoreServant) GetMessages(req *web.GetMessagesReq) (*web.GetMessagesResp, mir.Error) {
 	return nil, mir.Errorln(http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 
-func (UnimplementedCoreServant) GetUserInfo(c *gin.Context, req *web.UserInfoReq) (*web.UserInfoResp, mir.Error) {
+func (UnimplementedCoreServant) GetUserInfo(req *web.UserInfoReq) (*web.UserInfoResp, mir.Error) {
 	return nil, mir.Errorln(http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 
-func (UnimplementedCoreServant) SyncSearchIndex(c *gin.Context, req *web.SyncSearchIndexReq) mir.Error {
+func (UnimplementedCoreServant) SyncSearchIndex(req *web.SyncSearchIndexReq) mir.Error {
 	return mir.Errorln(http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 

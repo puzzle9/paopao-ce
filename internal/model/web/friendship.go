@@ -5,28 +5,33 @@
 package web
 
 import (
+	"github.com/rocboss/paopao-ce/internal/model/joint"
 	"github.com/rocboss/paopao-ce/internal/servants/base"
 )
 
 type RequestingFriendReq struct {
-	BaseInfo  `json:"-" binding:"-"`
-	UserId    int64  `json:"user_id" binding:"required"`
-	Greetings string `json:"greetings" binding:"required"`
+	joint.BaseTraceContext `form:"-"  binding:"-"`
+	BaseInfo               `json:"-" binding:"-"`
+	UserId                 int64  `json:"user_id" binding:"required"`
+	Greetings              string `json:"greetings" binding:"required"`
 }
 
 type AddFriendReq struct {
-	BaseInfo `json:"-" binding:"-"`
-	UserId   int64 `json:"user_id" binding:"required"`
+	joint.BaseTraceContext `form:"-"  binding:"-"`
+	BaseInfo               `json:"-" binding:"-"`
+	UserId                 int64 `json:"user_id" binding:"required"`
 }
 
 type RejectFriendReq struct {
-	BaseInfo `json:"-" binding:"-"`
-	UserId   int64 `json:"user_id" binding:"required"`
+	joint.BaseTraceContext `form:"-"  binding:"-"`
+	BaseInfo               `json:"-" binding:"-"`
+	UserId                 int64 `json:"user_id" binding:"required"`
 }
 
 type DeleteFriendReq struct {
-	BaseInfo `json:"-" binding:"-"`
-	UserId   int64 `json:"user_id"`
+	joint.BaseTraceContext `form:"-"  binding:"-"`
+	BaseInfo               `json:"-" binding:"-"`
+	UserId                 int64 `json:"user_id"`
 }
 
 type GetContactsReq struct {

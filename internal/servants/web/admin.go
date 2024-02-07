@@ -34,8 +34,8 @@ func (s *adminSrv) Chain() gin.HandlersChain {
 	return gin.HandlersChain{chain.JWT(), chain.Admin()}
 }
 
-func (s *adminSrv) ChangeUserStatus(c *gin.Context, req *web.ChangeUserStatusReq) mir.Error {
-	user, err := s.Ds.GetUserByID(c.Request.Context(), req.ID)
+func (s *adminSrv) ChangeUserStatus(req *web.ChangeUserStatusReq) mir.Error {
+	user, err := s.Ds.GetUserByID(req.Context(), req.ID)
 	if err != nil || user.Model == nil || user.ID <= 0 {
 		return web.ErrNoExistUsername
 	}
@@ -47,7 +47,7 @@ func (s *adminSrv) ChangeUserStatus(c *gin.Context, req *web.ChangeUserStatusReq
 	return nil
 }
 
-func (s *adminSrv) SiteInfo(c *gin.Context, req *web.SiteInfoReq) (*web.SiteInfoResp, mir.Error) {
+func (s *adminSrv) SiteInfo(req *web.SiteInfoReq) (*web.SiteInfoResp, mir.Error) {
 	res, err := &web.SiteInfoResp{ServerUpTime: s.serverUpTime}, error(nil)
 	res.RegisterUserCount, err = s.Ds.GetRegisterUserCount()
 	if err != nil {

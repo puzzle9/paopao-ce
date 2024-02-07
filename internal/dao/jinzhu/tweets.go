@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rocboss/paopao-ce/internal/conf"
 	"github.com/rocboss/paopao-ce/internal/core"
 	"github.com/rocboss/paopao-ce/internal/core/cs"
 	"github.com/rocboss/paopao-ce/internal/core/ms"
@@ -32,7 +33,11 @@ var (
 )
 
 type tweetSrv struct {
-	db     *gorm.DB
+	db *gorm.DB
+}
+
+type traceTweetSrv struct {
+	*tweetSrv
 	tracer trace.Tracer
 }
 
@@ -58,10 +63,16 @@ type tweetHelpSrvA struct {
 }
 
 func newTweetService(db *gorm.DB) core.TweetService {
-	return &tweetSrv{
-		db:     db,
-		tracer: otel.Tracer("tweetSrvDB"),
+	ts := &tweetSrv{
+		db: db,
 	}
+	if conf.UseOpenTelemetry() {
+		return &traceTweetSrv{
+			tweetSrv: ts,
+			tracer:   otel.Tracer("TweetService"),
+		}
+	}
+	return ts
 }
 
 func newTweetManageService(db *gorm.DB, cacheIndex core.CacheIndexService) core.TweetManageService {
@@ -429,11 +440,8 @@ func (s *tweetSrv) ListUserTweets(userId int64, style uint8, justEssence bool, l
 	return
 }
 
-func (s *tweetSrv) ListIndexNewestTweets(c context.Context, limit, offset int) (res []*ms.Post, total int64, err error) {
-	ctx, span := s.tracer.Start(c, "ListIndexNewestTweets")
-	defer span.End()
-
-	db := s.db.WithContext(ctx).Table(_post_).Where("visibility >= ?", cs.TweetVisitPublic)
+func (s *tweetSrv) ListIndexNewestTweets(c context.Context, limit int, offset int) (res []*ms.Post, total int64, err error) {
+	db := s.db.WithContext(c).Table(_post_).Where("visibility >= ?", cs.TweetVisitPublic)
 	if err = db.Count(&total).Error; err != nil {
 		return
 	}
@@ -446,11 +454,14 @@ func (s *tweetSrv) ListIndexNewestTweets(c context.Context, limit, offset int) (
 	return
 }
 
-func (s *tweetSrv) ListIndexHotsTweets(c context.Context, limit, offset int) (res []*ms.Post, total int64, err error) {
-	ctx, span := s.tracer.Start(c, "ListIndexHotsTweets")
+func (s *traceTweetSrv) ListIndexNewestTweets(c context.Context, limit int, offset int) (res []*ms.Post, total int64, err error) {
+	ctx, span := s.tracer.Start(c, "tweetSrv.ListIndexNewestTweets")
 	defer span.End()
+	return s.tweetSrv.ListIndexNewestTweets(ctx, limit, offset)
+}
 
-	db := s.db.WithContext(ctx).Table(_post_).Joins(fmt.Sprintf("LEFT JOIN %s metric ON %s.id=metric.post_id", _post_metric_, _post_)).Where(fmt.Sprintf("visibility >= ? AND %s.is_del=0 AND metric.is_del=0", _post_), cs.TweetVisitPublic)
+func (s *tweetSrv) ListIndexHotsTweets(c context.Context, limit int, offset int) (res []*ms.Post, total int64, err error) {
+	db := s.db.WithContext(c).Table(_post_).Joins(fmt.Sprintf("LEFT JOIN %s metric ON %s.id=metric.post_id", _post_metric_, _post_)).Where(fmt.Sprintf("visibility >= ? AND %s.is_del=0 AND metric.is_del=0", _post_), cs.TweetVisitPublic)
 	if err = db.Count(&total).Error; err != nil {
 		return
 	}
@@ -461,6 +472,12 @@ func (s *tweetSrv) ListIndexHotsTweets(c context.Context, limit, offset int) (re
 		return
 	}
 	return
+}
+
+func (s *traceTweetSrv) ListIndexHotsTweets(c context.Context, limit int, offset int) (res []*ms.Post, total int64, err error) {
+	ctx, span := s.tracer.Start(c, "tweetSrv.ListIndexHotsTweets")
+	defer span.End()
+	return s.tweetSrv.ListIndexHotsTweets(ctx, limit, offset)
 }
 
 func (s *tweetSrv) ListSyncSearchTweets(limit, offset int) (res []*ms.Post, total int64, err error) {
@@ -477,17 +494,16 @@ func (s *tweetSrv) ListSyncSearchTweets(limit, offset int) (res []*ms.Post, tota
 	return
 }
 
-func (s *tweetSrv) ListFollowingTweets(c context.Context, userId int64, limit, offset int) (res []*ms.Post, total int64, err error) {
-	ctx, span := s.tracer.Start(c, "ListFollowingTweets")
-	defer span.End()
-
+func (s *tweetSrv) ListFollowingTweets(c context.Context, userId int64, limit int, offset int) (res []*ms.Post, total int64, err error) {
+	span := trace.SpanFromContext(c)
 	beFriendIds, beFollowIds, xerr := s.getUserRelation(userId)
 	if xerr != nil {
+		span.RecordError(xerr)
 		span.SetStatus(codes.Error, "get user releation failed")
 		return nil, 0, xerr
 	}
 	beFriendCount, beFollowCount := len(beFriendIds), len(beFollowIds)
-	db := s.db.Model(&dbr.Post{}).WithContext(ctx)
+	db := s.db.Model(&dbr.Post{}).WithContext(c)
 	//可见性: 0私密 10充电可见 20订阅可见 30保留 40保留 50好友可见 60关注可见 70保留 80保留 90公开',
 	switch {
 	case beFriendCount > 0 && beFollowCount > 0:
@@ -500,6 +516,7 @@ func (s *tweetSrv) ListFollowingTweets(c context.Context, userId int64, limit, o
 		db = db.Where("user_id = ?", userId)
 	}
 	if err = db.Count(&total).Error; err != nil {
+		span.RecordError(err)
 		span.SetStatus(codes.Error, "get following tweets from db failed")
 		return
 	}
@@ -511,6 +528,12 @@ func (s *tweetSrv) ListFollowingTweets(c context.Context, userId int64, limit, o
 		return
 	}
 	return
+}
+
+func (s *traceTweetSrv) ListFollowingTweets(c context.Context, userId int64, limit int, offset int) (res []*ms.Post, total int64, err error) {
+	ctx, span := s.tracer.Start(c, "tweetSrv.ListFollowingTweets")
+	defer span.End()
+	return s.tweetSrv.ListFollowingTweets(ctx, userId, limit, offset)
 }
 
 func (s *tweetSrv) getUserRelation(userId int64) (beFriendIds []int64, beFollowIds []int64, err error) {

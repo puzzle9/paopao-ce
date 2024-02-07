@@ -16,5 +16,5 @@ type Trends struct {
 	Group `mir:"v1"`
 
 	// GetIndexTrends 获取广场页面动态条栏的索引item
-	GetIndexTrends func(Get, Context, web.GetIndexTrendsReq) web.GetIndexTrendsResp `mir:"/trends/index"`
+	GetIndexTrends func(Get, web.GetIndexTrendsReq) web.GetIndexTrendsResp `mir:"/trends/index"`
 }

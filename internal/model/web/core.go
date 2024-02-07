@@ -46,7 +46,8 @@ type UserInfoResp struct {
 }
 
 type GetMessagesReq struct {
-	SimpleInfo `json:"-" binding:"-"`
+	joint.BaseTraceContext `form:"-"  binding:"-"`
+	SimpleInfo             `json:"-" binding:"-"`
 	joint.BasePageInfo
 	Style MessageStyle `form:"style" binding:"required"`
 }
