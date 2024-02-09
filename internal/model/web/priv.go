@@ -124,23 +124,21 @@ type VisibleTweetResp struct {
 }
 
 type CreateCommentReq struct {
-	joint.BaseTraceContext `json:"-" binding:"-"`
-	SimpleInfo             `json:"-" binding:"-"`
-	PostID                 int64              `json:"post_id" binding:"required"`
-	Contents               []*PostContentItem `json:"contents" binding:"required"`
-	Users                  []string           `json:"users" binding:"required"`
-	ClientIP               string             `json:"-" binding:"-"`
+	SimpleInfo `json:"-" binding:"-"`
+	PostID     int64              `json:"post_id" binding:"required"`
+	Contents   []*PostContentItem `json:"contents" binding:"required"`
+	Users      []string           `json:"users" binding:"required"`
+	ClientIP   string             `json:"-" binding:"-"`
 }
 
 type CreateCommentResp ms.Comment
 
 type CreateCommentReplyReq struct {
-	joint.BaseTraceContext `form:"-"  binding:"-"`
-	SimpleInfo             `json:"-" binding:"-"`
-	CommentID              int64  `json:"comment_id" binding:"required"`
-	Content                string `json:"content" binding:"required"`
-	AtUserID               int64  `json:"at_user_id"`
-	ClientIP               string `json:"-" binding:"-"`
+	SimpleInfo `json:"-" binding:"-"`
+	CommentID  int64  `json:"comment_id" binding:"required"`
+	Content    string `json:"content" binding:"required"`
+	AtUserID   int64  `json:"at_user_id"`
+	ClientIP   string `json:"-" binding:"-"`
 }
 
 type CreateCommentReplyResp ms.CommentReply

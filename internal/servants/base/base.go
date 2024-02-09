@@ -33,45 +33,21 @@ var (
 )
 
 func init() {
-	if conf.UseOpenTelemetry() {
-		bindAnyFn = func(c *gin.Context, obj any) {
-			// setup *core.User if needed
-			if setter, ok := obj.(UserSetter); ok {
-				user, _ := UserFrom(c)
-				setter.SetUser(user)
-			}
-			// setup UserId if needed
-			if setter, ok := obj.(UserIdSetter); ok {
-				uid, _ := UserIdFrom(c)
-				setter.SetUserId(uid)
-			}
-			// setup PageInfo if needed
-			if setter, ok := obj.(PageInfoSetter); ok {
-				page, pageSize := app.GetPageInfo(c)
-				setter.SetPageInfo(page, pageSize)
-			}
+	bindAnyFn = func(c *gin.Context, obj any) {
+		// setup *core.User if needed
+		if setter, ok := obj.(UserSetter); ok {
+			user, _ := UserFrom(c)
+			setter.SetUser(user)
 		}
-	} else {
-		bindAnyFn = func(c *gin.Context, obj any) {
-			// setup *core.User if needed
-			if setter, ok := obj.(UserSetter); ok {
-				user, _ := UserFrom(c)
-				setter.SetUser(user)
-			}
-			// setup UserId if needed
-			if setter, ok := obj.(UserIdSetter); ok {
-				uid, _ := UserIdFrom(c)
-				setter.SetUserId(uid)
-			}
-			// setup PageInfo if needed
-			if setter, ok := obj.(PageInfoSetter); ok {
-				page, pageSize := app.GetPageInfo(c)
-				setter.SetPageInfo(page, pageSize)
-			}
-			// setup trace context if needed
-			if setter, ok := obj.(joint.TraceContext); ok {
-				setter.SetContext(c.Request.Context())
-			}
+		// setup UserId if needed
+		if setter, ok := obj.(UserIdSetter); ok {
+			uid, _ := UserIdFrom(c)
+			setter.SetUserId(uid)
+		}
+		// setup PageInfo if needed
+		if setter, ok := obj.(PageInfoSetter); ok {
+			page, pageSize := app.GetPageInfo(c)
+			setter.SetPageInfo(page, pageSize)
 		}
 	}
 }

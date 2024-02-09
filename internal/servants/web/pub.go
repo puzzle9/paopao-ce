@@ -42,7 +42,7 @@ type pubSrv struct {
 	*base.DaoServant
 }
 
-func (s *pubSrv) SendCaptcha(req *web.SendCaptchaReq) mir.Error {
+func (s *pubSrv) SendCaptcha(c context.Context, req *web.SendCaptchaReq) mir.Error {
 	ctx := context.Background()
 
 	// 验证图片验证码
@@ -66,7 +66,7 @@ func (s *pubSrv) SendCaptcha(req *web.SendCaptchaReq) mir.Error {
 	return nil
 }
 
-func (s *pubSrv) GetCaptcha() (*web.GetCaptchaResp, mir.Error) {
+func (s *pubSrv) GetCaptcha(c context.Context) (*web.GetCaptchaResp, mir.Error) {
 	cap := captcha.New()
 	if err := cap.AddFontFromBytes(assets.ComicBytes); err != nil {
 		logrus.Errorf("cap.AddFontFromBytes err:%s", err)
@@ -91,7 +91,7 @@ func (s *pubSrv) GetCaptcha() (*web.GetCaptchaResp, mir.Error) {
 	}, nil
 }
 
-func (s *pubSrv) Register(req *web.RegisterReq) (*web.RegisterResp, mir.Error) {
+func (s *pubSrv) Register(c context.Context, req *web.RegisterReq) (*web.RegisterResp, mir.Error) {
 	if _disallowUserRegister {
 		return nil, web.ErrDisallowUserRegister
 	}
@@ -124,7 +124,7 @@ func (s *pubSrv) Register(req *web.RegisterReq) (*web.RegisterResp, mir.Error) {
 	}, nil
 }
 
-func (s *pubSrv) Login(req *web.LoginReq) (*web.LoginResp, mir.Error) {
+func (s *pubSrv) Login(c context.Context, req *web.LoginReq) (*web.LoginResp, mir.Error) {
 	ctx := context.Background()
 	user, err := s.Ds.GetUserByUsername(req.Username)
 	if err != nil {
@@ -162,7 +162,7 @@ func (s *pubSrv) Login(req *web.LoginReq) (*web.LoginResp, mir.Error) {
 	}, nil
 }
 
-func (s *pubSrv) Version() (*web.VersionResp, mir.Error) {
+func (s *pubSrv) Version(c context.Context) (*web.VersionResp, mir.Error) {
 	return &web.VersionResp{
 		BuildInfo: version.ReadBuildInfo(),
 	}, nil

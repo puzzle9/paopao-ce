@@ -5,6 +5,8 @@
 package web
 
 import (
+	"context"
+
 	"github.com/alimy/mir/v4"
 	api "github.com/rocboss/paopao-ce/auto/api/v1"
 	"github.com/rocboss/paopao-ce/internal/conf"
@@ -22,11 +24,11 @@ type siteSrv struct {
 	*base.BaseServant
 }
 
-func (*siteSrv) Profile() (*web.SiteProfileResp, mir.Error) {
+func (*siteSrv) Profile(c context.Context) (*web.SiteProfileResp, mir.Error) {
 	return conf.WebProfileSetting, nil
 }
 
-func (*siteSrv) Version() (*web.VersionResp, mir.Error) {
+func (*siteSrv) Version(c context.Context) (*web.VersionResp, mir.Error) {
 	return &web.VersionResp{
 		BuildInfo: version.ReadBuildInfo(),
 	}, nil

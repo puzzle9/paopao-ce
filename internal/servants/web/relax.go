@@ -5,6 +5,8 @@
 package web
 
 import (
+	"context"
+
 	"github.com/alimy/mir/v4"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/rueidis"
@@ -38,7 +40,7 @@ func (s *relaxSrv) Chain() gin.HandlersChain {
 	return gin.HandlersChain{chain.JwtSurely()}
 }
 
-func (s *relaxSrv) GetUnreadMsgCount(req *web.GetUnreadMsgCountReq) (*web.GetUnreadMsgCountResp, mir.Error) {
+func (s *relaxSrv) GetUnreadMsgCount(c context.Context, req *web.GetUnreadMsgCountReq) (*web.GetUnreadMsgCountResp, mir.Error) {
 	if data, xerr := s.wc.GetUnreadMsgCountResp(req.Uid); xerr == nil && len(data) > 0 {
 		// logrus.Debugln("GetUnreadMsgCount get resp from cache")
 		return &web.GetUnreadMsgCountResp{

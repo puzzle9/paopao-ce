@@ -26,6 +26,7 @@ func main() {
 	log.Println("[Mir] generate code start")
 	opts := Options{
 		UseGin(),
+		UseRequestContext(),
 		SinkPath("../auto"),
 		WatchCtxDone(true),
 		RunMode(InSerialMode),

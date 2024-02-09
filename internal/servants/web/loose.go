@@ -5,6 +5,7 @@
 package web
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/alimy/mir/v4"
@@ -51,17 +52,16 @@ func (s *looseSrv) Chain() gin.HandlersChain {
 	return gin.HandlersChain{chain.JwtLoose()}
 }
 
-func (s *traceLooseSrv) Timeline(req *web.TimelineReq) (*web.TimelineResp, mir.Error) {
-	ctx, span := s.tracer.Start(req.Context(), "looseSrv.Timeline")
+func (s *traceLooseSrv) Timeline(c context.Context, req *web.TimelineReq) (*web.TimelineResp, mir.Error) {
+	ctx, span := s.tracer.Start(c, "looseSrv.Timeline")
 	defer span.End()
-	req.SetContext(ctx)
-	return s.looseSrv.Timeline(req)
+	return s.looseSrv.Timeline(ctx, req)
 }
 
-func (s *looseSrv) Timeline(req *web.TimelineReq) (*web.TimelineResp, mir.Error) {
+func (s *looseSrv) Timeline(c context.Context, req *web.TimelineReq) (*web.TimelineResp, mir.Error) {
 	limit, offset := req.PageSize, (req.Page-1)*req.PageSize
 	if req.Query == "" && req.Type == "search" {
-		return s.getIndexTweets(req, limit, offset)
+		return s.getIndexTweets(c, req, limit, offset)
 	}
 	q := &core.QueryReq{
 		Query: req.Query,
@@ -93,12 +93,10 @@ func (s *looseSrv) Timeline(req *web.TimelineReq) (*web.TimelineResp, mir.Error)
 	}, nil
 }
 
-func (s *looseSrv) getIndexTweets(req *web.TimelineReq, limit int, offset int) (res *web.TimelineResp, err mir.Error) {
-	ctx := req.Context()
-
+func (s *looseSrv) getIndexTweets(c context.Context, req *web.TimelineReq, limit int, offset int) (res *web.TimelineResp, err mir.Error) {
 	// 尝试直接从缓存中获取数据
 	key, ok := "", false
-	if res, key, ok = s.indexTweetsFromCache(req, limit, offset); ok {
+	if res, key, ok = s.indexTweetsFromCache(c, req, limit, offset); ok {
 		// logrus.WithContext(ctx).WithField("key", key).Debug("getIndexTweets from cache")
 		return
 	}
@@ -111,26 +109,26 @@ func (s *looseSrv) getIndexTweets(req *web.TimelineReq, limit int, offset int) (
 	switch req.Style {
 	case web.StyleTweetsFollowing:
 		if req.User != nil {
-			posts, total, xerr = s.Ds.ListFollowingTweets(ctx, req.User.ID, limit, offset)
+			posts, total, xerr = s.Ds.ListFollowingTweets(c, req.User.ID, limit, offset)
 		} else {
 			// return nil, web.ErrGetPostsNilUser
 			// 宽松处理，前端退出登录后马上获取动态列表，可能错误走到这里
-			posts, total, xerr = s.Ds.ListIndexNewestTweets(ctx, limit, offset)
+			posts, total, xerr = s.Ds.ListIndexNewestTweets(c, limit, offset)
 		}
 	case web.StyleTweetsNewest:
-		posts, total, xerr = s.Ds.ListIndexNewestTweets(ctx, limit, offset)
+		posts, total, xerr = s.Ds.ListIndexNewestTweets(c, limit, offset)
 	case web.StyleTweetsHots:
-		posts, total, xerr = s.Ds.ListIndexHotsTweets(ctx, limit, offset)
+		posts, total, xerr = s.Ds.ListIndexHotsTweets(c, limit, offset)
 	default:
 		return nil, web.ErrGetPostsUnknowStyle
 	}
 	if xerr != nil {
-		logrus.WithContext(ctx).Errorf("getIndexTweets occurs error[1]: %s", xerr)
+		logrus.WithContext(c).Errorf("getIndexTweets occurs error[1]: %s", xerr)
 		return nil, web.ErrGetPostFailed
 	}
 	postsFormated, verr := s.Ds.MergePosts(posts)
 	if verr != nil {
-		logrus.WithContext(ctx).Errorf("getIndexTweets in merge posts occurs error: %s", verr)
+		logrus.WithContext(c).Errorf("getIndexTweets in merge posts occurs error: %s", verr)
 		return nil, web.ErrGetPostFailed
 	}
 	userId := int64(-1)
@@ -138,7 +136,7 @@ func (s *looseSrv) getIndexTweets(req *web.TimelineReq, limit int, offset int) (
 		userId = req.User.ID
 	}
 	if err := s.PrepareTweets(userId, postsFormated); err != nil {
-		logrus.WithContext(ctx).Errorf("getIndexTweets occurs error[2]: %s", err)
+		logrus.WithContext(c).Errorf("getIndexTweets occurs error[2]: %s", err)
 		return nil, web.ErrGetPostsFailed
 	}
 	resp := joint.PageRespFrom(postsFormated, req.Page, req.PageSize, total)
@@ -151,7 +149,7 @@ func (s *looseSrv) getIndexTweets(req *web.TimelineReq, limit int, offset int) (
 	}, nil
 }
 
-func (s *looseSrv) indexTweetsFromCache(req *web.TimelineReq, limit int, offset int) (res *web.TimelineResp, key string, ok bool) {
+func (s *looseSrv) indexTweetsFromCache(c context.Context, req *web.TimelineReq, limit int, offset int) (res *web.TimelineResp, key string, ok bool) {
 	username := "_"
 	if req.User != nil {
 		username = req.User.Username
@@ -176,7 +174,7 @@ func (s *looseSrv) indexTweetsFromCache(req *web.TimelineReq, limit int, offset 
 	return
 }
 
-func (s *looseSrv) tweetCommentsFromCache(req *web.TweetCommentsReq, limit int, offset int) (res *web.TweetCommentsResp, key string, ok bool) {
+func (s *looseSrv) tweetCommentsFromCache(c context.Context, req *web.TweetCommentsReq, limit int, offset int) (res *web.TweetCommentsResp, key string, ok bool) {
 	key = fmt.Sprintf("%s%d:%s:%d:%d", s.prefixTweetComment, req.TweetId, req.Style, limit, offset)
 	if data, err := s.ac.Get(key); err == nil {
 		ok, res = true, &web.TweetCommentsResp{
@@ -188,36 +186,35 @@ func (s *looseSrv) tweetCommentsFromCache(req *web.TweetCommentsReq, limit int, 
 	return
 }
 
-func (s *traceLooseSrv) GetUserTweets(req *web.GetUserTweetsReq) (res *web.GetUserTweetsResp, err mir.Error) {
-	ctx, span := s.tracer.Start(req.Context(), "looseSrv.GetUserTweets")
+func (s *traceLooseSrv) GetUserTweets(c context.Context, req *web.GetUserTweetsReq) (res *web.GetUserTweetsResp, err mir.Error) {
+	ctx, span := s.tracer.Start(c, "looseSrv.GetUserTweets")
 	defer span.End()
-	req.SetContext(ctx)
-	return s.looseSrv.GetUserTweets(req)
+	return s.looseSrv.GetUserTweets(ctx, req)
 }
 
-func (s *looseSrv) GetUserTweets(req *web.GetUserTweetsReq) (res *web.GetUserTweetsResp, err mir.Error) {
+func (s *looseSrv) GetUserTweets(c context.Context, req *web.GetUserTweetsReq) (res *web.GetUserTweetsResp, err mir.Error) {
 	user, xerr := s.RelationTypFrom(req.User, req.Username)
 	if xerr != nil {
 		return nil, err
 	}
 	// 尝试直接从缓存中获取数据
 	key, ok := "", false
-	if res, key, ok = s.userTweetsFromCache(req, user); ok {
+	if res, key, ok = s.userTweetsFromCache(c, req, user); ok {
 		// logrus.Debugf("GetUserTweets from cache key:%s", key)
 		return
 	}
 	// 缓存获取未成功，只能查库了
 	switch req.Style {
 	case web.UserPostsStyleComment, web.UserPostsStyleMedia:
-		res, err = s.listUserTweets(req, user)
+		res, err = s.listUserTweets(c, req, user)
 	case web.UserPostsStyleHighlight:
-		res, err = s.getUserPostTweets(req, user, true)
+		res, err = s.getUserPostTweets(c, req, user, true)
 	case web.UserPostsStyleStar:
-		res, err = s.getUserStarTweets(req, user)
+		res, err = s.getUserStarTweets(c, req, user)
 	case web.UserPostsStylePost:
 		fallthrough
 	default:
-		res, err = s.getUserPostTweets(req, user, false)
+		res, err = s.getUserPostTweets(c, req, user, false)
 	}
 	// 缓存处理
 	if err == nil {
@@ -226,7 +223,7 @@ func (s *looseSrv) GetUserTweets(req *web.GetUserTweetsReq) (res *web.GetUserTwe
 	return
 }
 
-func (s *looseSrv) userTweetsFromCache(req *web.GetUserTweetsReq, user *cs.VistUser) (res *web.GetUserTweetsResp, key string, ok bool) {
+func (s *looseSrv) userTweetsFromCache(c context.Context, req *web.GetUserTweetsReq, user *cs.VistUser) (res *web.GetUserTweetsResp, key string, ok bool) {
 	switch req.Style {
 	case web.UserPostsStylePost, web.UserPostsStyleHighlight, web.UserPostsStyleMedia:
 		key = fmt.Sprintf("%s%d:%s:%s:%d:%d", s.prefixUserTweets, user.UserId, req.Style, user.RelTyp, req.Page, req.PageSize)
@@ -247,7 +244,7 @@ func (s *looseSrv) userTweetsFromCache(req *web.GetUserTweetsReq, user *cs.VistU
 	return
 }
 
-func (s *looseSrv) getUserStarTweets(req *web.GetUserTweetsReq, user *cs.VistUser) (*web.GetUserTweetsResp, mir.Error) {
+func (s *looseSrv) getUserStarTweets(c context.Context, req *web.GetUserTweetsReq, user *cs.VistUser) (*web.GetUserTweetsResp, mir.Error) {
 	stars, totalRows, err := s.Ds.ListUserStarTweets(user, req.PageSize, (req.Page-1)*req.PageSize)
 	if err != nil {
 		logrus.Errorf("getUserStarTweets err[1]: %s", err)
@@ -280,7 +277,7 @@ func (s *looseSrv) getUserStarTweets(req *web.GetUserTweetsReq, user *cs.VistUse
 	}, nil
 }
 
-func (s *looseSrv) listUserTweets(req *web.GetUserTweetsReq, user *cs.VistUser) (*web.GetUserTweetsResp, mir.Error) {
+func (s *looseSrv) listUserTweets(c context.Context, req *web.GetUserTweetsReq, user *cs.VistUser) (*web.GetUserTweetsResp, mir.Error) {
 	var (
 		tweets []*ms.Post
 		total  int64
@@ -319,7 +316,7 @@ func (s *looseSrv) listUserTweets(req *web.GetUserTweetsReq, user *cs.VistUser) 
 	}, nil
 }
 
-func (s *looseSrv) getUserPostTweets(req *web.GetUserTweetsReq, user *cs.VistUser, isHighlight bool) (*web.GetUserTweetsResp, mir.Error) {
+func (s *looseSrv) getUserPostTweets(c context.Context, req *web.GetUserTweetsReq, user *cs.VistUser, isHighlight bool) (*web.GetUserTweetsResp, mir.Error) {
 	style := cs.StyleUserTweetsGuest
 	switch user.RelTyp {
 	case cs.RelationAdmin:
@@ -361,7 +358,7 @@ func (s *looseSrv) getUserPostTweets(req *web.GetUserTweetsReq, user *cs.VistUse
 	}, nil
 }
 
-func (s *looseSrv) GetUserProfile(req *web.GetUserProfileReq) (*web.GetUserProfileResp, mir.Error) {
+func (s *looseSrv) GetUserProfile(c context.Context, req *web.GetUserProfileReq) (*web.GetUserProfileResp, mir.Error) {
 	he, err := s.Ds.UserProfileByName(req.Username)
 	if err != nil {
 		logrus.Errorf("looseSrv.GetUserProfile occurs error[1]: %s", err)
@@ -396,7 +393,7 @@ func (s *looseSrv) GetUserProfile(req *web.GetUserProfileReq) (*web.GetUserProfi
 	}, nil
 }
 
-func (s *looseSrv) TopicList(req *web.TopicListReq) (*web.TopicListResp, mir.Error) {
+func (s *looseSrv) TopicList(c context.Context, req *web.TopicListReq) (*web.TopicListResp, mir.Error) {
 	var (
 		tags, extralTags cs.TagList
 		err              error
@@ -433,11 +430,11 @@ func (s *looseSrv) TopicList(req *web.TopicListReq) (*web.TopicListResp, mir.Err
 	}, nil
 }
 
-func (s *looseSrv) TweetComments(req *web.TweetCommentsReq) (res *web.TweetCommentsResp, err mir.Error) {
+func (s *looseSrv) TweetComments(c context.Context, req *web.TweetCommentsReq) (res *web.TweetCommentsResp, err mir.Error) {
 	limit, offset := req.PageSize, (req.Page-1)*req.PageSize
 	// 尝试直接从缓存中获取数据
 	key, ok := "", false
-	if res, key, ok = s.tweetCommentsFromCache(req, limit, offset); ok {
+	if res, key, ok = s.tweetCommentsFromCache(c, req, limit, offset); ok {
 		logrus.Debugf("looseSrv.TweetComments from cache key:%s", key)
 		return
 	}
@@ -527,7 +524,7 @@ func (s *looseSrv) TweetComments(req *web.TweetCommentsReq) (res *web.TweetComme
 	}, nil
 }
 
-func (s *looseSrv) TweetDetail(req *web.TweetDetailReq) (*web.TweetDetailResp, mir.Error) {
+func (s *looseSrv) TweetDetail(c context.Context, req *web.TweetDetailReq) (*web.TweetDetailResp, mir.Error) {
 	post, err := s.Ds.GetPostByID(req.TweetId)
 	if err != nil {
 		return nil, web.ErrGetPostFailed

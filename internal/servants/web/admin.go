@@ -5,6 +5,7 @@
 package web
 
 import (
+	"context"
 	"time"
 
 	"github.com/alimy/mir/v4"
@@ -34,8 +35,8 @@ func (s *adminSrv) Chain() gin.HandlersChain {
 	return gin.HandlersChain{chain.JWT(), chain.Admin()}
 }
 
-func (s *adminSrv) ChangeUserStatus(req *web.ChangeUserStatusReq) mir.Error {
-	user, err := s.Ds.GetUserByID(req.Context(), req.ID)
+func (s *adminSrv) ChangeUserStatus(c context.Context, req *web.ChangeUserStatusReq) mir.Error {
+	user, err := s.Ds.GetUserByID(c, req.ID)
 	if err != nil || user.Model == nil || user.ID <= 0 {
 		return web.ErrNoExistUsername
 	}
@@ -47,7 +48,7 @@ func (s *adminSrv) ChangeUserStatus(req *web.ChangeUserStatusReq) mir.Error {
 	return nil
 }
 
-func (s *adminSrv) SiteInfo(req *web.SiteInfoReq) (*web.SiteInfoResp, mir.Error) {
+func (s *adminSrv) SiteInfo(c context.Context, req *web.SiteInfoReq) (*web.SiteInfoResp, mir.Error) {
 	res, err := &web.SiteInfoResp{ServerUpTime: s.serverUpTime}, error(nil)
 	res.RegisterUserCount, err = s.Ds.GetRegisterUserCount()
 	if err != nil {
